@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Default dark Mode */
+:root {
+  --background: #111;
+  --foreground: #fff;
+  --primary: theme(colors.sky.500);
+  --secondary: theme(colors.violet.400);
+  --accent: #1e293b;
+  --border: #334155;
+  --muted-foreground: #94a3b8;
+  --card: #1e293b;
+  --island-background: theme(colors.sky.700/.03);
+  --island-border: theme(colors.sky.500/.35);
+  --rounded: 0.1rem;
+}
+
+body {
+  --sb-track-color: transparent;
+  --sb-thumb-color: var(--primary);
+  --sb-size: 7px;
+}
+
+/* ✅ Custom Scrollbar for Table, Dropdowns, and Other Scrollable Elements */
+.custom-scrollbar::-webkit-scrollbar {
+  width: var(--sb-size);
+  height: var(--sb-size);
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 1px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius: 1px;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .custom-scrollbar {
+    scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+  }
+}
+
