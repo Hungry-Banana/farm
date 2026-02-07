@@ -10,6 +10,7 @@ import FieldSection from "@/components/ui/FieldSection";
 import TableSection from "@/components/ui/table/TableSection";
 import { convertServerToInventory } from "@/lib/serverDataAdapter";
 import { TabContainer, TabDefinition } from "@/components/ui/tab/TabContainer";
+import ServerActionsDropdown from "@/components/ui/Buttons/ServerActionButton";
 
 // Helper component for rendering network interface sections
 const NetworkSection = ({ fields }: { fields: Array<{ label: string; value: any; link?: { href: string; text: string } }> }) => (
@@ -228,6 +229,10 @@ export default function ServerPage() {
                                     <span className="text-sm text-muted-foreground">{server.server_type || 'Unknown Type'}</span>
                                 </div>
                             </div>
+                        </div>
+
+                        <div>
+                            <ServerActionsDropdown serverId={server.server_id} />
                         </div>
                     </div>
                     

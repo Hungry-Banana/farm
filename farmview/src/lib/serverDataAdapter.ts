@@ -1,10 +1,10 @@
 import { 
   ServerWithAllComponents, 
   ServerInventory,
-  ServerCpu,
-  ServerRam,
-  ServerDisk,
-  ServerNic 
+  ServerCpuDetail,
+  ServerMemoryDetail,
+  ServerDiskDetail,
+  ServerNetworkDetail 
 } from '@/types/server';
 
 /**
@@ -16,53 +16,73 @@ export function convertServerToInventory(serverData: ServerWithAllComponents): S
     server_name: serverData.server_name || `Server ${serverData.server_id}`,
     
     // Convert CPUs
-    cpus: serverData.cpus.map((cpu, index): ServerCpu => ({
-      id: `cpu_${cpu.cpu_id}`,
-      socket: cpu.socket_number,
-      model: cpu.model_name || 'Unknown CPU',
-      cores: cpu.num_cores || 0,
-      threads: cpu.num_threads || 0,
-      base_frequency_ghz: cpu.capacity_mhz ? cpu.capacity_mhz / 1000 : 0,
-      max_frequency_ghz: cpu.capacity_mhz ? cpu.capacity_mhz / 1000 : undefined,
-      cache_l3_mb: cpu.l3_cache_kb ? cpu.l3_cache_kb / 1024 : undefined,
+    cpus: serverData.cpus.map((cpu, index): ServerCpuDetail => ({
+      cpu_id: cpu.cpu_id,
+      socket_number: cpu.socket_number,
+      slot: cpu.slot,
+      manufacturer: cpu.manufacturer,
+      model_name: cpu.model_name,
+      num_cores: cpu.num_cores,
+      num_threads: cpu.num_threads,
+      capacity_mhz: cpu.capacity_mhz,
+      l1_cache_kb: cpu.l1_cache_kb,
+      l2_cache_kb: cpu.l2_cache_kb,
+      l3_cache_kb: cpu.l3_cache_kb,
     })),
 
     // Convert Memory
-    ram: serverData.memory.map((mem): ServerRam => ({
-      id: `dimm_${mem.dimm_id}`,
+    ram: serverData.memory.map((mem): ServerMemoryDetail => ({
+      dimm_id: mem.dimm_id,
       slot: mem.slot,
-      size_gb: mem.size_bytes ? Math.round(mem.size_bytes / (1024 * 1024 * 1024)) : 0,
-      type: (mem.mem_type as 'DDR3' | 'DDR4' | 'DDR5') || 'DDR4',
-      speed_mhz: mem.speed_mt_s || 0,
-      manufacturer: mem.manufacturer || 'Unknown',
-      part_number: mem.part_number || 'Unknown',
       serial_number: mem.serial_number,
+      manufacturer: mem.manufacturer,
+      part_number: mem.part_number,
+      size_bytes: mem.size_bytes,
+      speed_mt_s: mem.speed_mt_s,
+      mem_type: mem.mem_type,
+      form_factor: mem.form_factor,
       voltage: mem.voltage,
     })),
 
     // Convert Disks
-    disks: serverData.disks.map((disk): ServerDisk => ({
-      id: `disk_${disk.disk_id}`,
-      device_name: disk.name,
-      size_gb: disk.size_bytes ? Math.round(disk.size_bytes / (1024 * 1024 * 1024)) : 0,
-      type: mapDiskType(disk.bus_type),
-      interface: disk.bus_type || 'Unknown',
-      model: disk.model || 'Unknown',
-      serial_number: disk.serial || 'Unknown',
-      health_status: mapHealthStatus(disk.smart_health),
-      smart_status: disk.smart_health === 'healthy' ? 'passed' : 'failed',
+    disks: serverData.disks.map((disk): ServerDiskDetail => ({
+      disk_id: disk.disk_id,
+      name: disk.name,
+      dev_path: disk.dev_path,
+      serial: disk.serial,
+      firmware_version: disk.firmware_version,
+      smart_health: disk.smart_health,
+      manufacturer: disk.manufacturer,
+      model: disk.model,
+      size_bytes: disk.size_bytes,
+      bus_type: disk.bus_type,
+      form_factor: disk.form_factor,
+      rpm: disk.rpm,
     })),
 
     // Convert Network Interfaces
-    nics: serverData.network_interfaces.map((nic): ServerNic => ({
-      id: `nic_${nic.interface_id}`,
-      interface_name: nic.name,
-      mac_address: nic.mac_address || 'Unknown',
+    nics: serverData.network_interfaces.map((nic): ServerNetworkDetail => ({
+      interface_id: nic.interface_id,
+      name: nic.name,
+      mac_address: nic.mac_address,
       ip_address: nic.ip_address,
-      speed_mbps: nic.speed_mbps || 0,
-      link_status: 'up', // Default since backend doesn't track real-time status
-      vendor: nic.manufacturer || 'Unknown',
-      pci_slot: nic.pci_address,
+      mtu: nic.mtu,
+      speed_mbps: nic.speed_mbps,
+      firmware_version: nic.firmware_version,
+      pci_address: nic.pci_address,
+      is_primary: nic.is_primary,
+      bond_group: nic.bond_group,
+      bond_master: nic.bond_master,
+      switch_port_id: nic.switch_port_id,
+      interface_type: nic.interface_type,
+      firmware_version_bmc: nic.firmware_version_bmc,
+      release_date: nic.release_date,
+      switch_name: nic.switch_name,
+      switch_port_name: nic.switch_port_name,
+      manufacturer: nic.manufacturer,
+      model: nic.model,
+      max_speed_mbps: nic.max_speed_mbps,
+      num_ports: nic.num_ports,
     })),
 
     // GPUs - placeholder since backend doesn't have GPU data yet
@@ -82,31 +102,6 @@ export function convertServerToInventory(serverData: ServerWithAllComponents): S
       serial_number: serverData.motherboard_serial_number,
     },
   };
-}
-
-/**
- * Maps backend disk interface types to frontend disk types
- */
-function mapDiskType(interfaceType?: string): 'SSD' | 'HDD' | 'NVMe' | 'SATA' {
-  if (!interfaceType) return 'SATA';
-  
-  const type = interfaceType.toLowerCase();
-  if (type.includes('nvme')) return 'NVMe';
-  if (type.includes('ssd')) return 'SSD';
-  if (type.includes('hdd')) return 'HDD';
-  return 'SATA';
-}
-
-/**
- * Maps backend health status to frontend health status
- */
-function mapHealthStatus(health?: string): 'healthy' | 'warning' | 'critical' {
-  if (!health) return 'healthy';
-  
-  const status = health.toLowerCase();
-  if (status === 'warning') return 'warning';
-  if (status === 'critical' || status === 'failed') return 'critical';
-  return 'healthy';
 }
 
 /**

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: farm-core-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: farm-core
+  template:
+    metadata:
+      labels:
+        app: farm-core
+    spec:
+      containers:
+      - name: farm-core
+        image: rust:latest
+        env:
+          - name: MYSQL_HOST
+            value: mysql
+          - name: MYSQL_USER
+            value: farm
+          - name: MYSQL_PASSWORD
+            value: farm
+          - name: MYSQL_DATABASE
+            value: farm
+        workingDir: /app
+        command: ["/bin/sh", "-c"]
+        args: 
+          - |
+            cargo install cargo-watch && \
+            echo "✅ cargo-watch installed" && \
+            ls -la /app && \
+            echo "📦 Running cargo watch..." && \
+            exec cargo watch -x run
+        ports:
+        - containerPort: 6183
+        volumeMounts:
+        - name: app-code
+          mountPath: /app
+      volumes:
+      - name: app-code
+        hostPath:
+          path: ${APP_SRC}
+          type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: farm-core-service
+spec:
+  type: NodePort
+  selector:
+    app: farm-core
+  ports:
+  - port: 6183
+    targetPort: 6183
+    nodePort: 32001

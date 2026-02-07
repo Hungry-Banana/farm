@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
+import TableSection from "@/components/ui/table/TableSection";
 import { getServers, getServerOverview } from "@/lib/servers";
 
 // Status colors mapping
@@ -378,62 +379,57 @@ export default function ServersOverviewPage() {
           </div>
 
           {servers.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-island_border">
-                    <th className="text-left py-3 px-4 font-medium text-foreground">Server</th>
-                    <th className="text-left py-3 px-4 font-medium text-foreground">Hostname</th>
-                    <th className="text-left py-3 px-4 font-medium text-foreground">IP Address</th>
-                    <th className="text-left py-3 px-4 font-medium text-foreground">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-foreground">Environment</th>
-                    <th className="text-left py-3 px-4 font-medium text-foreground">OS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-island_border">
-                  {servers.slice(0, 10).map((server: any) => (
-                    <tr key={server.server_id} className="hover:bg-accent/20 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">🖥️</span>
-                          <div>
-                            <p className="font-medium text-foreground">
-                              {server.server_name || `Server ${server.server_id}`}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              ID: {server.server_id}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-mono text-sm text-foreground">
-                          {server.host_name || 'N/A'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-mono text-sm text-foreground">
-                          {server.ip_address || 'N/A'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-theme text-xs font-medium border ${statusColors[server.status as keyof typeof statusColors] || 'text-gray-500 bg-gray-500/10 border-gray-500/20'}`}>
-                          {server.status || 'unknown'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-theme text-xs font-medium border ${environmentColors[server.environment_type?.toLowerCase() as keyof typeof environmentColors] || environmentColors.unknown}`}>
-                          {server.environment_type || 'Unknown'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-foreground">
-                        {server.os_name || 'N/A'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <TableSection
+              columns={[
+                {
+                  key: 'server',
+                  label: 'Server',
+                  render: (value, server) => (
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🖥️</span>
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {server.server_name || `Server ${server.server_id}`}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          ID: {server.server_id}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  key: 'manufacturer',
+                  label: 'Manufacturer',
+                  render: (value) => (
+                    <span className="font-mono text-sm text-foreground">
+                      {value || 'N/A'}
+                    </span>
+                  )
+                },
+                {
+                  key: 'status',
+                  label: 'Status',
+                  render: (value) => (
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-theme text-xs font-medium border ${statusColors[value as keyof typeof statusColors] || 'text-gray-500 bg-gray-500/10 border-gray-500/20'}`}>
+                      {value || 'unknown'}
+                    </span>
+                  )
+                },
+                {
+                  key: 'environment_type',
+                  label: 'Environment',
+                  render: (value) => (
+                    <span className={`inline-flex items-center px-2 py-1 rounded-theme text-xs font-medium border ${environmentColors[value?.toLowerCase() as keyof typeof environmentColors] || environmentColors.unknown}`}>
+                      {value || 'Unknown'}
+                    </span>
+                  )
+                },
+              ]}
+              data={servers.slice(0, 10)}
+              keyField="server_id"
+              searchable={false}
+            />
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <div className="text-4xl mb-4">�️</div>
