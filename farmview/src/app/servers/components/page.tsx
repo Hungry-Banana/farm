@@ -8,7 +8,7 @@ import { getComponentCatalog } from "@/lib/components";
 import { ComponentCatalog, ComponentMotherboardType, ComponentCpuType, ComponentMemoryType, ComponentGpuType, ComponentDiskType, ComponentNetworkType } from "@/types/components";
 
 // Unique motherboard models component
-const MotherboardModelsTab = ({ motherboards }: { motherboards: ComponentMotherboardType[] }) => {
+const MotherboardModelsTab = ({ motherboards = [] }: { motherboards?: ComponentMotherboardType[] }) => {
   const totalMotherboards = motherboards.length;
   const manufacturers = [...new Set(motherboards.map(mb => mb.manufacturer))];
 
@@ -63,7 +63,7 @@ const MotherboardModelsTab = ({ motherboards }: { motherboards: ComponentMotherb
 };
 
 // Unique CPU models component
-const CPUModelsTab = ({ cpus }: { cpus: ComponentCpuType[] }) => {
+const CPUModelsTab = ({ cpus = [] }: { cpus?: ComponentCpuType[] }) => {
   const getVendorColor = (vendor: string) => {
     switch (vendor.toLowerCase()) {
       case 'intel': return 'text-blue-500 bg-blue-500/10 border-blue-500/10';
@@ -136,7 +136,7 @@ const CPUModelsTab = ({ cpus }: { cpus: ComponentCpuType[] }) => {
 };
 
 // Unique RAM models component
-const RAMModelsTab = ({ memory }: { memory: ComponentMemoryType[] }) => {
+const RAMModelsTab = ({ memory = [] }: { memory?: ComponentMemoryType[] }) => {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'DDR5': return 'text-blue-600 bg-blue-100 border-blue-200';
@@ -208,7 +208,7 @@ const RAMModelsTab = ({ memory }: { memory: ComponentMemoryType[] }) => {
 };
 
 // Unique GPU models component
-const GPUModelsTab = ({ gpus }: { gpus: ComponentGpuType[] }) => {
+const GPUModelsTab = ({ gpus = [] }: { gpus?: ComponentGpuType[] }) => {
   const getVendorColor = (vendor: string) => {
     switch (vendor.toLowerCase()) {
       case 'nvidia': return 'text-green-500 bg-green-500/10 border-green-500/10';
@@ -273,7 +273,7 @@ const GPUModelsTab = ({ gpus }: { gpus: ComponentGpuType[] }) => {
 };
 
 // Unique Disk models component
-const DiskModelsTab = ({ disks }: { disks: ComponentDiskType[] }) => {
+const DiskModelsTab = ({ disks = [] }: { disks?: ComponentDiskType[] }) => {
   const getTypeColor = (rotational?: boolean) => {
     if (rotational === false) return 'text-blue-500 bg-blue-500/10 border-blue-500/10'; // SSD/NVMe
     if (rotational === true) return 'text-orange-500 bg-orange-500/10 border-orange-500/10'; // HDD
@@ -356,7 +356,7 @@ const DiskModelsTab = ({ disks }: { disks: ComponentDiskType[] }) => {
 };
 
 // Network Interfaces component
-const NetworkModelsTab = ({ networkInterfaces }: { networkInterfaces: ComponentNetworkType[] }) => {
+const NetworkModelsTab = ({ networkInterfaces = [] }: { networkInterfaces?: ComponentNetworkType[] }) => {
   const totalNetworkCount = networkInterfaces.length;
   const vendors = [...new Set(networkInterfaces.filter(nic => nic.vendor_name).map(nic => nic.vendor_name))];
   const drivers = [...new Set(networkInterfaces.filter(nic => nic.driver).map(nic => nic.driver))];
