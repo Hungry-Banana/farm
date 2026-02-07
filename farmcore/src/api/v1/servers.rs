@@ -91,7 +91,7 @@ pub async fn get_server_by_id(
             
             let response = ApiResponse::<()>::error(
                 "DATABASE_ERROR",
-                "Failed to fetch server details"
+                "Failed to fetch server details",
             );
             HttpResponse::InternalServerError().json(response)
         }

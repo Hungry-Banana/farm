@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { DefaultServerIcon } from "@/assets/icons";
 import { getServerById } from "@/lib/servers";
-import { ServerCpuDetail, ServerDiskDetail, ServerGpuDetail, ServerInventory, ServerMemoryDetail, ServerWithAllComponents } from "@/types/server";
+import { ServerCpuUI, ServerDiskUI, ServerGpuDetail, ServerInventory, ServerMemoryUI, ServerWithAllComponents } from "@/types/server";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import FieldSection from "@/components/ui/FieldSection";
 import TableSection from "@/components/ui/table/TableSection";
@@ -35,12 +35,13 @@ const NetworkSection = ({ fields }: { fields: Array<{ label: string; value: any;
     </div>
 );
 
-const CPUInventory = ({ cpu }: { cpu: ServerCpuDetail[] }) => {
+const CPUInventory = ({ cpu }: { cpu: ServerCpuUI[] }) => {
   return (
 		<div className="p-6">
 			<TableSection
 			columns={[
 				{ key: 'socket', label: 'Socket' },
+                { key: 'manufacturer', label: 'Manufacturer' },
 				{ key: 'model', label: 'Model' },
 				{ key: 'cores', label: 'Cores'},
 				{ key: 'threads', label: 'Threads'},
@@ -55,7 +56,7 @@ const CPUInventory = ({ cpu }: { cpu: ServerCpuDetail[] }) => {
     );
 };
 
-const RAMInventory = ({ ram }: { ram: ServerMemoryDetail[] }) => {
+const RAMInventory = ({ ram }: { ram: ServerMemoryUI[] }) => {
   return (
 		<div className="p-6">
 			<TableSection
@@ -65,7 +66,6 @@ const RAMInventory = ({ ram }: { ram: ServerMemoryDetail[] }) => {
 				{ key: 'size_gb', label: 'Capacity (GB)'},
 				{ key: 'speed_mhz', label: 'Speed (MHz)'},
 				{ key: 'type', label: 'Type' },
-				{ key: 'voltage', label: 'Voltage' },
 				{ key: 'part_number', label: 'Part Number' },
 				{ key: 'serial_number', label: 'Serial' },
 			]}
@@ -77,15 +77,16 @@ const RAMInventory = ({ ram }: { ram: ServerMemoryDetail[] }) => {
     );
 };
 
-const StorageInventory = ({ storage }: { storage: ServerDiskDetail[] }) => {
+const StorageInventory = ({ storage }: { storage: ServerDiskUI[] }) => {
   return (
 		<div className="p-6">
 			<TableSection
 			columns={[
 				{ key: 'device_name', label: 'Device' },
+                { key: 'manufacturer', label: 'Manufacturer' },
 				{ key: 'model', label: 'Model' },
-				{ key: 'size_gb', label: 'Capacity'},
-				{ key: 'type', label: 'Type'},
+                { key: 'firmware_version', label: 'Firmware' },
+				{ key: 'size_gb', label: 'Capacity (GB)'},
 				{ key: 'interface', label: 'Interface' },
 				{ key: 'health_status', label: 'Health' },
 				{ key: 'serial_number', label: 'Serial' },

@@ -29,6 +29,8 @@ export interface Server {
   created_at?: string;
   updated_at?: string;
   notes?: string;
+  state?: string;
+  stage?: string;
 }
 
 export interface ServerCpuDetail {
@@ -54,8 +56,8 @@ export interface ServerMemoryDetail {
   size_bytes?: number;
   speed_mt_s?: number;
   mem_type?: string;
-  form_factor?: string;
-  voltage?: number;
+  form_factor?: string | null;
+  voltage?: number | null;
 }
 
 export interface ServerDiskDetail {
@@ -63,38 +65,78 @@ export interface ServerDiskDetail {
   name: string;
   dev_path?: string;
   serial?: string;
-  firmware_version?: string;
+  firmware_version?: string | null;
   smart_health?: string;
   manufacturer?: string;
   model?: string;
   size_bytes?: number;
   bus_type?: string;
-  form_factor?: string;
-  rpm?: number;
+  form_factor?: string | null;
+  rpm?: number | null;
+}
+
+// UI-transformed types for display components
+export interface ServerCpuUI {
+  cpu_inventory_id: number;
+  manufacturer?: string;
+  socket: number;
+  model?: string;
+  cores?: number;
+  threads?: number;
+  base_frequency_ghz: number;
+  cache_l3_mb: number;
+}
+
+export interface ServerMemoryUI {
+  ram_inventory_id: number;
+  slot: string;
+  manufacturer?: string;
+  size_gb: number;
+  speed_mhz?: number;
+  type?: string;
+  voltage?: number | string;
+  part_number?: string;
+  serial_number?: string;
+}
+
+export interface ServerDiskUI {
+  storage_inventory_id: number;
+  device_name: string;
+  dev_path?: string;
+  manufacturer?: string;
+  model?: string;
+  serial_number?: string;
+  firmware_version?: string | null;
+  size_gb: number;
+  type?: string | null;
+  interface?: string;
+  health_status?: string;
+  rpm?: number | null;
 }
 
 export interface ServerNetworkDetail {
   interface_id: number;
   name: string;
   mac_address?: string;
-  ip_address?: string;
-  mtu?: number;
+  ip_address?: string | null;
+  mtu?: number | null;
   speed_mbps?: number;
-  firmware_version?: string;
-  pci_address?: string;
+  firmware_version?: string | null;
+  pci_address?: string | null;
   is_primary?: boolean;
-  bond_group?: string;
-  bond_master?: string;
-  switch_port_id?: number;
+  bond_group?: string | null;
+  bond_master?: string | null;
+  switch_port_id?: number | null;
   interface_type?: string;
-  firmware_version_bmc?: string;
-  release_date?: string;
-  switch_name?: string;
-  switch_port_name?: string;
+  firmware_version_bmc?: string | null;
+  release_date?: string | null;
+  switch_id?: number | null;
+  switch_name?: string | null;
+  switch_port_name?: string | null;
   manufacturer?: string;
   model?: string;
-  max_speed_mbps?: number;
-  num_ports?: number;
+  max_speed_mbps?: number | null;
+  num_ports?: number | null;
 }
 
 export interface ServerCredential {
@@ -125,19 +167,20 @@ export interface ServerBMCDetail {
   username?: string;
   password?: string;
   firmware_version?: string;
-  release_date?: string;
+  release_date?: string | null;
   supports_ipmi?: boolean;
   supports_redfish?: boolean;
   supports_web_interface?: boolean;
   is_accessible?: boolean;
-  last_ping_at?: string;
-  switch_port_id?: number;
-  switch_name?: string;
-  switch_port_name?: string;
+  last_ping_at?: string | null;
+  switch_port_id?: number | null;
+  switch_id?: number | null;
+  switch_name?: string | null;
+  switch_port_name?: string | null;
   manufacturer?: string;
   model?: string;
-  max_speed_mbps?: number;
-  num_ports?: number;
+  max_speed_mbps?: number | null;
+  num_ports?: number | null;
 }
 
 export interface ServerGpuDetail {
@@ -155,11 +198,11 @@ export interface ServerGpuDetail {
 export interface ServerInventory {
   server_id: string;
   server_name: string;
-  disks: ServerDiskDetail[];
+  disks: ServerDiskUI[];
   gpus: ServerGpuDetail[];
   nics: ServerNetworkDetail[];
-  cpus: ServerCpuDetail[];
-  ram: ServerMemoryDetail[];
+  cpus: ServerCpuUI[];
+  ram: ServerMemoryUI[];
   motherboard?: {
     manufacturer: string;
     model: string; // This represents product_name from component_motherboard_types

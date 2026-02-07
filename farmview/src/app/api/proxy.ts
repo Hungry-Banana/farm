@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { API_CONFIG } from '@/lib/config/api.server';
+import { API_CONFIG } from '@/app/api/api.configs';
 
 /**
  * Farm Core API Proxy

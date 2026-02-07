@@ -16,7 +16,10 @@ metadata:
   name: mysql-secret
 type: Opaque
 stringData:
-  mysql-root-password: password
+  MYSQL_ROOT_PASSWORD: password
+  MYSQL_USER: farm
+  MYSQL_PASSWORD: farm
+  MYSQL_DATABASE: farm
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -47,18 +50,9 @@ spec:
           image: mysql:8.0
           ports:
             - containerPort: 3306
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: mysql-root-password
-            - name: MYSQL_USER
-              value: farm
-            - name: MYSQL_PASSWORD
-              value: farm
-            - name: MYSQL_DATABASE
-              value: farm
+          envFrom:
+          - secretRef:
+              name: mysql-secret
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql

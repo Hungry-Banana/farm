@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: farm-core-deployment
+  name: farm-core
 spec:
   replicas: 1
   selector:
@@ -13,17 +13,14 @@ spec:
         app: farm-core
     spec:
       containers:
-      - name: farm-core
+      - name: farm-core-container
         image: rust:latest
         env:
           - name: MYSQL_HOST
             value: mysql
-          - name: MYSQL_USER
-            value: farm
-          - name: MYSQL_PASSWORD
-            value: farm
-          - name: MYSQL_DATABASE
-            value: farm
+        envFrom:
+        - secretRef:
+            name: mysql-secret
         workingDir: /app
         command: ["/bin/sh", "-c"]
         args: 

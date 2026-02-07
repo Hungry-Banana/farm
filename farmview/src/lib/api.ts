@@ -222,24 +222,6 @@ export const API_ENDPOINTS = {
     DELETE: (id: number) => `/api/servers/${id}`,
   },
   
-  // Switch endpoints
-  SWITCHES: {
-    LIST: '/api/switches/get_switches',
-    BY_ID: (id: number) => `/api/switches/${id}`,
-    CREATE: '/api/switches',
-    UPDATE: (id: number) => `/api/switches/${id}`,
-    DELETE: (id: number) => `/api/switches/${id}`,
-  },
-  
-  // Gateway endpoints
-  GATEWAYS: {
-    LIST: '/api/gateways/get_gateways',
-    BY_ID: (id: number) => `/api/gateways/${id}`,
-    CREATE: '/api/gateways',
-    UPDATE: (id: number) => `/api/gateways/${id}`,
-    DELETE: (id: number) => `/api/gateways/${id}`,
-  },
-  
   // Component endpoints
   COMPONENTS: {
     CATALOG: '/api/servers/components/catalog',
@@ -250,6 +232,11 @@ export const API_ENDPOINTS = {
     NETWORK: '/api/servers/components/network',
     GPUS: '/api/servers/components/gpus',
     MOTHERBOARDS: '/api/components/motherboards',
+  },
+
+  MIGRATIONS: {
+    RUN: '/api/migrations/run',
+    RESET: '/api/migrations/reset',
   },
 
   // Virtual Machine endpoints
@@ -278,24 +265,6 @@ export const API_ENDPOINTS = {
     CLUSTERS: '/api/kubernetes/clusters',
     CLUSTER_BY_ID: (id: number) => `/api/kubernetes/clusters/${id}`,
     CLUSTER_DETAILS: (id: number) => `/api/kubernetes/clusters/${id}/details`,
-    
-    // Cluster resource endpoints
     CLUSTER_NODES: (id: number) => `/api/kubernetes/clusters/${id}/nodes`,
-    CLUSTER_NAMESPACES: (id: number) => `/api/kubernetes/clusters/${id}/namespaces`,
-    CLUSTER_WORKLOADS: (id: number) => `/api/kubernetes/clusters/${id}/workloads`,
-    CLUSTER_SERVICES: (id: number) => `/api/kubernetes/clusters/${id}/services`,
-    CLUSTER_PODS: (id: number) => `/api/kubernetes/clusters/${id}/pods`,
-    CLUSTER_EVENTS: (id: number) => `/api/kubernetes/clusters/${id}/events`,
-    
-    // Namespace resource endpoints
-    NAMESPACE_BY_ID: (id: number) => `/api/kubernetes/namespaces/${id}`,
-    NAMESPACE_WORKLOADS: (id: number) => `/api/kubernetes/namespaces/${id}/workloads`,
-    NAMESPACE_SERVICES: (id: number) => `/api/kubernetes/namespaces/${id}/services`,
-    NAMESPACE_PODS: (id: number) => `/api/kubernetes/namespaces/${id}/pods`,
-    
-    // Workload endpoints
-    WORKLOADS: '/api/kubernetes/workloads', // Get all workloads across clusters
-    WORKLOAD_BY_ID: (id: number) => `/api/kubernetes/workloads/${id}`,
-    WORKLOAD_PODS: (id: number) => `/api/kubernetes/workloads/${id}/pods`,
   }
 } as const;

@@ -110,6 +110,41 @@ CREATE TABLE IF NOT EXISTS component_gpu_types (
     INDEX idx_vendor_model (vendor, model)
 );
 
+-- Switch Model/Hardware Types
+CREATE TABLE IF NOT EXISTS component_switch_types (
+    component_switch_id INT PRIMARY KEY AUTO_INCREMENT,
+    
+    vendor VARCHAR(255) NOT NULL,
+    model VARCHAR(255) NOT NULL,
+    series VARCHAR(255),
+    
+    -- Hardware specifications
+    total_ports INT,
+    max_power_watts INT,
+    form_factor ENUM('1U', '2U', '3U', '4U', 'Desktop', 'Modular', 'Other'),
+    rack_units DECIMAL(3,1),
+    
+    -- Port capabilities
+    gigabit_ports INT DEFAULT 0,
+    ten_gig_ports INT DEFAULT 0,
+    twenty_five_gig_ports INT DEFAULT 0,
+    forty_gig_ports INT DEFAULT 0,
+    hundred_gig_ports INT DEFAULT 0,
+    
+    -- Management capabilities
+    supports_snmp BOOLEAN DEFAULT TRUE,
+    supports_ssh BOOLEAN DEFAULT TRUE,
+    supports_telnet BOOLEAN DEFAULT FALSE,
+    supports_web_ui BOOLEAN DEFAULT TRUE,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE KEY uk_switch_model (vendor, model, series),
+    INDEX idx_vendor_model (vendor, model),
+    INDEX idx_form_factor (form_factor),
+    INDEX idx_port_count (total_ports)
+);
+
 -- ===================================================================
 -- CORE SERVERS TABLE
 -- ===================================================================
@@ -359,16 +394,6 @@ CREATE TABLE IF NOT EXISTS server_bmc_interfaces (
     INDEX idx_bmc_accessible (is_accessible),
     INDEX idx_bmc_switch_port (switch_port_id)
 );
-
--- Insert a placeholder server record for unassigned BMCs
-INSERT IGNORE INTO servers (server_id, server_name, status, state)
-VALUES (0, 'UNASSIGNED_BMC_PLACEHOLDER', 'INACTIVE', 'NEW');
-
--- Add foreign key constraint after placeholder server exists
-ALTER TABLE server_bmc_interfaces
-ADD CONSTRAINT fk_bmc_server
-    FOREIGN KEY (server_id) REFERENCES servers(server_id)
-    ON DELETE CASCADE;
 
 -- ===================================================================
 -- NETWORK INTERFACE IP ADDRESSES

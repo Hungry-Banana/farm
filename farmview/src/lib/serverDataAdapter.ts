@@ -1,9 +1,9 @@
 import { 
   ServerWithAllComponents, 
   ServerInventory,
-  ServerCpuDetail,
-  ServerMemoryDetail,
-  ServerDiskDetail,
+  ServerCpuUI,
+  ServerMemoryUI,
+  ServerDiskUI,
   ServerNetworkDetail 
 } from '@/types/server';
 
@@ -15,48 +15,44 @@ export function convertServerToInventory(serverData: ServerWithAllComponents): S
     server_id: serverData.server_id.toString(),
     server_name: serverData.server_name || `Server ${serverData.server_id}`,
     
-    // Convert CPUs
-    cpus: serverData.cpus.map((cpu, index): ServerCpuDetail => ({
-      cpu_id: cpu.cpu_id,
-      socket_number: cpu.socket_number,
-      slot: cpu.slot,
+    // Convert CPUs - transform to match table column keys
+    cpus: serverData.cpus.map((cpu): ServerCpuUI => ({
+      cpu_inventory_id: cpu.cpu_id,
+      socket: cpu.socket_number,
       manufacturer: cpu.manufacturer,
-      model_name: cpu.model_name,
-      num_cores: cpu.num_cores,
-      num_threads: cpu.num_threads,
-      capacity_mhz: cpu.capacity_mhz,
-      l1_cache_kb: cpu.l1_cache_kb,
-      l2_cache_kb: cpu.l2_cache_kb,
-      l3_cache_kb: cpu.l3_cache_kb,
+      model: cpu.model_name,
+      cores: cpu.num_cores,
+      threads: cpu.num_threads,
+      base_frequency_ghz: cpu.capacity_mhz ? parseFloat((cpu.capacity_mhz / 1000).toFixed(2)) : 0,
+      cache_l3_mb: cpu.l3_cache_kb ? parseFloat((cpu.l3_cache_kb / 1024).toFixed(0)) : 0,
     })),
 
-    // Convert Memory
-    ram: serverData.memory.map((mem): ServerMemoryDetail => ({
-      dimm_id: mem.dimm_id,
+    // Convert Memory - transform to match table column keys
+    ram: serverData.memory.map((mem): ServerMemoryUI => ({
+      ram_inventory_id: mem.dimm_id,
       slot: mem.slot,
       serial_number: mem.serial_number,
       manufacturer: mem.manufacturer,
       part_number: mem.part_number,
-      size_bytes: mem.size_bytes,
-      speed_mt_s: mem.speed_mt_s,
-      mem_type: mem.mem_type,
-      form_factor: mem.form_factor,
-      voltage: mem.voltage,
+      size_gb: mem.size_bytes ? parseFloat((mem.size_bytes / (1024 * 1024 * 1024)).toFixed(0)) : 0,
+      speed_mhz: mem.speed_mt_s,
+      type: mem.mem_type,
+      voltage: mem.voltage !== null && mem.voltage !== undefined ? mem.voltage : 'N/A',
     })),
 
-    // Convert Disks
-    disks: serverData.disks.map((disk): ServerDiskDetail => ({
-      disk_id: disk.disk_id,
-      name: disk.name,
+    // Convert Disks - transform to match table column keys
+    disks: serverData.disks.map((disk): ServerDiskUI => ({
+      storage_inventory_id: disk.disk_id,
+      device_name: disk.name,
       dev_path: disk.dev_path,
-      serial: disk.serial,
-      firmware_version: disk.firmware_version,
-      smart_health: disk.smart_health,
       manufacturer: disk.manufacturer,
       model: disk.model,
-      size_bytes: disk.size_bytes,
-      bus_type: disk.bus_type,
-      form_factor: disk.form_factor,
+      serial_number: disk.serial,
+      firmware_version: disk.firmware_version,
+      size_gb: disk.size_bytes ? parseFloat((disk.size_bytes / (1024 * 1024 * 1024)).toFixed(0)) : 0,
+      type: disk.form_factor,
+      interface: disk.bus_type,
+      health_status: disk.smart_health,
       rpm: disk.rpm,
     })),
 
