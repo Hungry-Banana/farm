@@ -193,12 +193,13 @@ export default function ServerPage() {
 		'INACTIVE': { color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: '' },
 		'MAINTENANCE': { color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: '' },
 		'UNKNOWN': { color: 'text-gray-500', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: '' },
-		'NEW': { color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: '' }
+		'NEW': { color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: '' },
+		'DEFAULT': { color: 'text-gray-500', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: '' }
 	};
 
 	if (!server) return <p className="text-center p-8">Server data not found.</p>;
 
-	const currentStatus = statusConfig[server.status] || statusConfig['unknown'];
+	const currentStatus = statusConfig[server.status] || statusConfig['DEFAULT'];
 
 	return (
 		<div className="space-y-6">
