@@ -239,11 +239,11 @@ export default function ServerPage() {
                     </div>
                     
                     {/* Two-column layout with vertical separator */}
-                    <div className="grid grid-cols-2 gap-8">
+                    <div className="grid grid-cols-2 gap-5">
                         {/* Left Column: Server Information */}
                         <div className="space-y-6">
                             
-                            <div className="p-3 rounded-theme bg-accent/10 hover:bg-accent/20 transition-colors">
+                            <div className=" rounded-theme bg-accent/10 hover:bg-accent/20 transition-colors">
                                 <div className="space-y-4 text-sm text-foreground font-mono">
                                     {/* Basic Information Section */}
                                     <FieldSection fields={[
@@ -283,12 +283,23 @@ export default function ServerPage() {
                                     {/* Separator Line */}
                                     <div className="border-t border-island_border my-3"></div>
 
+                                    {/* Motherboard & Firmware Section */}
+                                    <FieldSection fields={[
+                                        { label: 'BIOS Version', value: inventory?.motherboard.bios_version, icon: '' },
+                                        { label: 'BMC Firmware', value: inventory?.motherboard.bmc_firmware_version, icon: '' },
+                                        { label: 'BIOS Release Date', value: inventory?.motherboard.bios_release_date, icon: '' },
+                                        { label: 'BMC Release Date', value: inventory?.motherboard.bmc_release_date, icon: '' }
+                                    ]} />
+
+                                    {/* Separator Line */}
+                                    <div className="border-t border-island_border my-3"></div>
+
                                     {/* Management & Status Section */}
                                     <FieldSection fields={[
                                         { label: 'Agent Version', value: server.agent_version, icon: '' },
-                                        { label: 'Last Updated', value: server.updated_at ? new Date(server.updated_at).toLocaleDateString() : 'N/A', icon: '🔄' },
+                                        { label: 'Last Updated', value: server.updated_at ? new Date(server.updated_at).toLocaleDateString() : 'N/A', icon: '' },
                                         { label: 'Last Inventory', value: server.last_inventory_at ? new Date(server.last_inventory_at).toLocaleDateString() : 'N/A', icon: '' },
-                                        { label: 'Created Date', value: server.created_at ? new Date(server.created_at).toLocaleDateString() : 'N/A', icon: '📅' }
+                                        { label: 'Created Date', value: server.created_at ? new Date(server.created_at).toLocaleDateString() : 'N/A', icon: '' }
                                     ]} />
                                 </div>
                             </div>

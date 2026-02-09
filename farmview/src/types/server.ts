@@ -7,11 +7,6 @@ export interface Server {
   serial_number?: string;
   chassis_manufacturer?: string;
   chassis_serial_number?: string;
-  component_motherboard_id?: number;
-  motherboard_serial_number?: string;
-  bios_vendor?: string;
-  bios_version?: string;
-  bios_release_date?: string;
   bmc_ip_address?: string;
   bmc_mac_address?: string;
   bmc_firmware_version?: string;
@@ -147,8 +142,9 @@ export interface ServerCredential {
 }
 
 export interface ServerMotherboardDetail {
-  component_motherboard_id?: number;
-  motherboard_serial_number?: string;
+  motherboard_id: number;
+  component_motherboard_id: number;
+  serial_number?: string;
   bios_vendor?: string;
   bios_version?: string;
   bios_release_date?: string;
@@ -203,12 +199,15 @@ export interface ServerInventory {
   nics: ServerNetworkDetail[];
   cpus: ServerCpuUI[];
   ram: ServerMemoryUI[];
-  motherboard?: {
+  motherboard: {
     manufacturer: string;
     model: string; // This represents product_name from component_motherboard_types
     bios_version: string;
-    serial_number?: string;
-    version?: string; // Added to match component_motherboard_types.version
+    bios_release_date: string;
+    serial_number: string;
+    version: string;
+    bmc_firmware_version: string;
+    bmc_release_date: string;
   };
   power_supplies?: {
     id: string;

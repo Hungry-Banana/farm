@@ -47,6 +47,12 @@ pub async fn index() -> impl Responder {
             .add_response_code(ResponseCodeDoc::new(200, "Success - Server updated"))
             .add_response_code(ResponseCodeDoc::new(400, "Invalid field or value"))
             .add_response_code(ResponseCodeDoc::new(404, "Server not found"))
+    )
+    .add_endpoint(
+        EndpointDoc::new("/api/v1/servers/inventory", HttpMethod::Post, "Create or update server from inventory data")
+            .add_response_code(ResponseCodeDoc::new(200, "Success - Server created or updated"))
+            .add_response_code(ResponseCodeDoc::new(400, "Invalid inventory data"))
+            .add_response_code(ResponseCodeDoc::new(500, "Database error"))
     );
 
     let response = ApiResponse::success(documentation);
@@ -177,12 +183,53 @@ pub async fn update_server(
     }
 }
 
+#[actix_web::post("/inventory")]
+pub async fn upsert_server_inventory(
+    app_state: web::Data<AppState>,
+    inventory: web::Json<crate::repositories::server_repository::ServerInventory>
+) -> impl Responder {
+    let inventory_data = inventory.into_inner();
+
+    match app_state.server_repo().upsert_server_from_inventory(inventory_data).await {
+        Ok((server_id, was_created)) => {
+            let message = if was_created {
+                format!("Server created successfully with ID {}", server_id)
+            } else {
+                format!("Server {} updated successfully", server_id)
+            };
+
+            let response = ApiResponse::success(serde_json::json!({
+                "message": message,
+                "server_id": server_id,
+                "created": was_created
+            }));
+            HttpResponse::Ok().json(response)
+        },
+        Err(e) => {
+            log::error!("Error upserting server from inventory: {}", e);
+            
+            let error_message = e.to_string();
+            let (mut status_code, error_code) = if error_message.contains("No primary network interface") 
+                || error_message.contains("MAC address") 
+                || error_message.contains("does not exist") {
+                (HttpResponse::BadRequest(), "VALIDATION_ERROR")
+            } else {
+                (HttpResponse::InternalServerError(), "DATABASE_ERROR")
+            };
+
+            let response = ApiResponse::<()>::error(error_code, &error_message);
+            status_code.json(response)
+        }
+    }
+}
+
 pub fn configure_server_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/servers")
             .service(index)
             .service(get_all_servers)
             .service(get_server_overview)  // Move overview BEFORE the /{id} route
+            .service(upsert_server_inventory)  // POST endpoint for inventory
             .service(get_server_by_id)     // This goes after more specific routes
             .service(update_server)        // PUT endpoint for updates
     );

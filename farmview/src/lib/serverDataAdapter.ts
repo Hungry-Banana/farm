@@ -84,18 +84,20 @@ export function convertServerToInventory(serverData: ServerWithAllComponents): S
     // GPUs - placeholder since backend doesn't have GPU data yet
     gpus: [],
 
-    // Motherboard info from motherboard detail
-    motherboard: serverData.motherboard_detail ? {
-      manufacturer: serverData.motherboard_detail.manufacturer || 'Unknown',
-      model: serverData.motherboard_detail.product_name || serverData.product_name || 'Unknown',
-      bios_version: serverData.motherboard_detail.bios_version || serverData.bios_version || 'Unknown',
-      serial_number: serverData.motherboard_detail.motherboard_serial_number || serverData.motherboard_serial_number,
-      version: serverData.motherboard_detail.version,
-    } : {
-      manufacturer: serverData.manufacturer || 'Unknown',
-      model: serverData.product_name || 'Unknown', 
-      bios_version: serverData.bios_version || 'Unknown',
-      serial_number: serverData.motherboard_serial_number,
+    // Motherboard info from motherboard detail with BMC firmware
+    motherboard: {
+      manufacturer: serverData.motherboard_detail?.manufacturer || serverData.manufacturer || 'Unknown',
+      model: serverData.motherboard_detail?.product_name || serverData.product_name || 'Unknown',
+      bios_version: serverData.motherboard_detail?.bios_version || 'Unknown',
+      bios_release_date: serverData.motherboard_detail?.bios_release_date 
+        ? new Date(serverData.motherboard_detail.bios_release_date).toLocaleDateString() 
+        : 'N/A',
+      serial_number: serverData.motherboard_detail?.serial_number || 'N/A',
+      version: serverData.motherboard_detail?.version || 'N/A',
+      bmc_firmware_version: serverData.bmc_interfaces?.[0]?.firmware_version || 'N/A',
+      bmc_release_date: serverData.bmc_interfaces?.[0]?.release_date
+        ? new Date(serverData.bmc_interfaces[0].release_date).toLocaleDateString()
+        : 'N/A',
     },
   };
 }

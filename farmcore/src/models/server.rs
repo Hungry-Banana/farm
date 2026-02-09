@@ -7,19 +7,14 @@ pub struct Server {
     pub server_id: i32,
     pub agent_version: Option<String>,
     pub architecture: Option<String>,
-    pub bios_release_date: Option<chrono::NaiveDate>,
-    pub bios_vendor: Option<String>,
-    pub bios_version: Option<String>,
     pub chassis_manufacturer: Option<String>,
     pub chassis_serial_number: Option<String>,
     pub cluster_id: Option<i32>,
-    pub component_motherboard_id: Option<i32>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub data_center_id: Option<i32>,
     pub environment_type: Option<String>, // ENUM in DB: 'PRODUCTION', 'DEVELOPMENT', 'QA', 'STAGING', 'TESTING'
     pub last_inventory_at: Option<chrono::DateTime<chrono::Utc>>,
     pub manufacturer: Option<String>,
-    pub motherboard_serial_number: Option<String>,
     pub product_name: Option<String>,
     pub rack_id: Option<i32>,
     pub rack_position_id: Option<i32>,
@@ -45,9 +40,10 @@ pub struct ServerCredential {
 // Motherboard component details
 #[derive(FromRow, Debug, Clone, Serialize, Deserialize)]
 pub struct ServerMotherboardDetail {
-    // Server-specific motherboard data
-    pub component_motherboard_id: Option<i32>,
-    pub motherboard_serial_number: Option<String>,
+    // Server-specific motherboard data (from server_motherboards table)
+    pub motherboard_id: i32,
+    pub component_motherboard_id: i32,
+    pub serial_number: Option<String>,
     pub bios_vendor: Option<String>,
     pub bios_version: Option<String>,
     pub bios_release_date: Option<chrono::NaiveDate>,

@@ -162,15 +162,6 @@ CREATE TABLE IF NOT EXISTS servers (
     chassis_manufacturer VARCHAR(255),
     chassis_serial_number VARCHAR(255),
     
-    -- Motherboard Information
-    component_motherboard_id INT,
-    motherboard_serial_number VARCHAR(255),
-    
-    -- BIOS Information
-    bios_vendor VARCHAR(255),
-    bios_version VARCHAR(255),
-    bios_release_date DATE,
-    
     -- Management Fields
     server_type ENUM('BAREMETAL', 'HOST', 'STORAGE', 'COMPUTE') DEFAULT 'BAREMETAL',
     status ENUM('ACTIVE', 'INACTIVE', 'MAINTENANCE', 'RMA', 'DECOMMISSIONED') NOT NULL DEFAULT 'INACTIVE',
@@ -192,15 +183,10 @@ CREATE TABLE IF NOT EXISTS servers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    CONSTRAINT fk_server_motherboard
-        FOREIGN KEY (component_motherboard_id) REFERENCES component_motherboard_types(component_motherboard_id)
-        ON DELETE SET NULL,
-    
     INDEX idx_server_name (server_name),
     INDEX idx_serial_number (serial_number),
     INDEX idx_status (status),
-    INDEX idx_last_inventory (last_inventory_at),
-    INDEX idx_component_motherboard (component_motherboard_id)
+    INDEX idx_last_inventory (last_inventory_at)
 );
 
 -- ===================================================================
@@ -227,6 +213,37 @@ CREATE TABLE IF NOT EXISTS server_cpus (
         
     UNIQUE KEY uk_server_socket (server_id, socket_number),
     INDEX idx_component_cpu (component_cpu_id)
+);
+
+-- ===================================================================
+-- MOTHERBOARD INFORMATION (References component_motherboard_types)
+-- ===================================================================
+CREATE TABLE IF NOT EXISTS server_motherboards (
+    motherboard_id INT PRIMARY KEY AUTO_INCREMENT,
+    server_id INT NOT NULL,
+    component_motherboard_id INT NOT NULL,
+    
+    serial_number VARCHAR(255),
+    
+    -- BIOS Information (actual installed version)
+    bios_vendor VARCHAR(255),
+    bios_version VARCHAR(255),
+    bios_release_date DATE,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_motherboard_server
+        FOREIGN KEY (server_id) REFERENCES servers(server_id)
+        ON DELETE CASCADE,
+        
+    CONSTRAINT fk_motherboard_component
+        FOREIGN KEY (component_motherboard_id) REFERENCES component_motherboard_types(component_motherboard_id)
+        ON DELETE RESTRICT,
+        
+    UNIQUE KEY uk_server_motherboard (server_id),
+    INDEX idx_component_motherboard (component_motherboard_id),
+    INDEX idx_serial_number (serial_number)
 );
 
 -- ===================================================================

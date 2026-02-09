@@ -11,67 +11,80 @@
 INSERT IGNORE INTO servers (
     server_name, architecture, product_name, manufacturer, serial_number,
     chassis_manufacturer, chassis_serial_number,
-    component_motherboard_id, motherboard_serial_number,
-    bios_vendor, bios_version, bios_release_date,
     server_type, status, environment_type,
     cluster_id, sub_cluster_id, data_center_id, rack_id, rack_position_id,
     last_inventory_at, agent_version
 ) VALUES 
 -- Development Web Server 1
 ('dev-web-01', 'x86_64', 'PowerEdge R750', 'Dell', 'DW750001', 
- 'Dell', 'DW750001C', 2, 'DW750001MB', 
- 'Dell Inc.', 'v2.15.0', '2023-03-15',
+ 'Dell', 'DW750001C',
  'COMPUTE', 'ACTIVE', 'DEVELOPMENT',
  1, 1, 1, 1, 10,
  '2025-11-28 08:00:00', '1.5.2'),
 
 -- Development Database Server 1
 ('dev-db-01', 'x86_64', 'PowerEdge R750', 'Dell', 'DW750002', 
- 'Dell', 'DW750002C', 2, 'DW750002MB', 
- 'Dell Inc.', 'v2.15.0', '2023-03-15',
+ 'Dell', 'DW750002C',
  'STORAGE', 'ACTIVE', 'DEVELOPMENT',
  1, 1, 1, 1, 11,
  '2025-11-28 08:30:00', '1.5.2'),
 
 -- Development Storage Server 1
 ('dev-storage-01', 'x86_64', 'ProLiant DL380 Gen10 Plus', 'HPE', 'HP380001', 
- 'HPE', 'HP380001C', 3, 'HP380001MB', 
- 'HPE', 'U46', '2023-01-20',
+ 'HPE', 'HP380001C',
  'STORAGE', 'ACTIVE', 'DEVELOPMENT',
  1, 2, 1, 1, 12,
  '2025-11-28 07:45:00', '1.5.1'),
 
 -- Production Web Server 1
 ('prod-web-01', 'x86_64', 'X11DPH-T', 'Supermicro', 'SM001WEB', 
- 'Supermicro', 'SM001WEBC', 1, 'SM001WEBMB', 
- 'American Megatrends Inc.', '3.3a', '2022-12-10',
+ 'Supermicro', 'SM001WEBC',
  'COMPUTE', 'ACTIVE', 'PRODUCTION',
  2, 1, 2, 5, 20,
  '2025-11-28 06:00:00', '1.6.0'),
 
 -- Production Database Server 1
 ('prod-db-01', 'x86_64', 'X11DPH-T', 'Supermicro', 'SM002DB', 
- 'Supermicro', 'SM002DBC', 1, 'SM002DBMB', 
- 'American Megatrends Inc.', '3.3a', '2022-12-10',
+ 'Supermicro', 'SM002DBC',
  'STORAGE', 'ACTIVE', 'PRODUCTION',
  2, 1, 2, 5, 21,
  '2025-11-28 06:15:00', '1.6.0'),
 
 -- Maintenance Server
 ('maint-util-01', 'x86_64', 'WS C621E SAGE', 'ASUS', 'AS001UTIL', 
- 'ASUS', 'AS001UTILC', 4, 'AS001UTILMB', 
- 'American Megatrends Inc.', '3801', '2023-05-01',
+ 'ASUS', 'AS001UTILC',
  'BAREMETAL', 'MAINTENANCE', 'TESTING',
  0, 0, 1, 2, 5,
  '2025-11-27 14:30:00', '1.4.8'),
 
 -- New Server (not yet configured)
 ('new-srv-01', 'x86_64', 'EPYCD8-2T', 'ASRock Rack', 'AR001NEW', 
- 'ASRock Rack', 'AR001NEWC', 5, 'AR001NEWMB', 
- 'American Megatrends Inc.', '3.20', '2023-08-15',
+ 'ASRock Rack', 'AR001NEWC',
  'BAREMETAL', 'NEW', 'STAGING',
  0, 0, 1, 3, 8,
  NULL, NULL);
+
+-- ===================================================================
+-- SERVER MOTHERBOARDS
+-- ===================================================================
+INSERT IGNORE INTO server_motherboards (
+    server_id, component_motherboard_id, serial_number,
+    bios_vendor, bios_version, bios_release_date
+) VALUES 
+-- dev-web-01
+(1, 2, 'DW750001MB', 'Dell Inc.', 'v2.15.0', '2023-03-15'),
+-- dev-db-01
+(2, 2, 'DW750002MB', 'Dell Inc.', 'v2.15.0', '2023-03-15'),
+-- dev-storage-01
+(3, 3, 'HP380001MB', 'HPE', 'U46', '2023-01-20'),
+-- prod-web-01
+(4, 1, 'SM001WEBMB', 'American Megatrends Inc.', '3.3a', '2022-12-10'),
+-- prod-db-01
+(5, 1, 'SM002DBMB', 'American Megatrends Inc.', '3.3a', '2022-12-10'),
+-- maint-util-01
+(6, 4, 'AS001UTILMB', 'American Megatrends Inc.', '3801', '2023-05-01'),
+-- new-srv-01
+(7, 5, 'AR001NEWMB', 'American Megatrends Inc.', '3.20', '2023-08-15');
 
 -- ===================================================================
 -- SERVER CPUS (Example CPU installations)
