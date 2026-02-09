@@ -22,20 +22,37 @@ export default function ActionsButton({ items, buttonLabel = 'Actions', classNam
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
 
-  useEffect(() => {
-    if (dropdownOpen && buttonRef.current) {
+  const updateDropdownPosition = () => {
+    if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const ddWidth = dropdownWidth;
 
-      let leftPosition = rect.right - ddWidth + window.scrollX;
+      let leftPosition = rect.right - ddWidth;
       if (leftPosition < 10) leftPosition = 10;
       if (leftPosition + ddWidth > viewportWidth - 10) leftPosition = viewportWidth - ddWidth - 10;
 
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8,
+        top: rect.bottom + 8,
         left: leftPosition,
       });
+    }
+  };
+
+  useEffect(() => {
+    if (dropdownOpen) {
+      updateDropdownPosition();
+    }
+  }, [dropdownOpen, dropdownWidth]);
+
+  useEffect(() => {
+    if (dropdownOpen) {
+      const handleScroll = () => {
+        updateDropdownPosition();
+      };
+
+      window.addEventListener('scroll', handleScroll, true);
+      return () => window.removeEventListener('scroll', handleScroll, true);
     }
   }, [dropdownOpen, dropdownWidth]);
 
