@@ -213,11 +213,12 @@ impl ServerRepository {
         };
 
         // Get all components in parallel
-        let (cpus, memory, disks, network_interfaces, bmc_interfaces, credentials, motherboard_detail) = tokio::try_join!(
+        let (cpus, memory, disks, network_interfaces, gpus, bmc_interfaces, credentials, motherboard_detail) = tokio::try_join!(
             self.get_server_cpus(server_id),
             self.get_server_memory(server_id),
             self.get_server_disks(server_id),
             self.get_server_network_interfaces(server_id),
+            self.get_server_gpus(server_id),
             self.get_server_bmc_interfaces(server_id),
             self.get_server_credentials(server_id),
             self.get_server_motherboard_detail(server_id)
@@ -229,6 +230,7 @@ impl ServerRepository {
             memory,
             disks,
             network_interfaces,
+            gpus,
             bmc_interfaces,
             credentials,
             motherboard_detail,
@@ -371,25 +373,47 @@ impl ServerRepository {
                 sbi.password,
                 sbi.firmware_version,
                 sbi.release_date,
-                sbi.supports_ipmi,
-                sbi.supports_redfish,
-                sbi.supports_web_interface,
+                cbt.supports_ipmi,
+                cbt.supports_redfish,
+                cbt.supports_web_interface,
                 sbi.is_accessible,
                 sbi.last_ping_at,
                 sbi.switch_port_id,
                 s.switch_id,
                 s.switch_name,
                 sp.name as switch_port_name,
-                cnt.vendor_name as manufacturer,
-                cnt.device_name as model,
-                cnt.max_speed_mbps,
+                cbt.vendor as manufacturer,
+                cbt.model,
+                cbt.max_speed_mbps,
                 NULL as num_ports
             FROM server_bmc_interfaces sbi
-            JOIN component_network_types cnt ON sbi.component_network_id = cnt.component_network_id
+            JOIN component_bmc_types cbt ON sbi.component_bmc_id = cbt.component_bmc_id
             LEFT JOIN switch_ports sp ON sbi.switch_port_id = sp.switch_port_id
             LEFT JOIN switches s ON sp.switch_id = s.switch_id
             WHERE sbi.server_id = ?
             ORDER BY sbi.name
+        "#;
+
+        sqlx::query_as(query)
+            .bind(server_id)
+            .fetch_all(&self.pool)
+            .await
+    }
+
+    async fn get_server_gpus(&self, server_id: i32) -> Result<Vec<crate::models::ServerGpuDetail>, sqlx::Error> {
+        let query = r#"
+            SELECT 
+                sg.gpu_id,
+                sg.pci_address,
+                sg.driver_version,
+                sg.uuid,
+                cgt.vendor,
+                cgt.model,
+                cgt.vram_mb
+            FROM server_gpus sg
+            JOIN component_gpu_types cgt ON sg.component_gpu_id = cgt.component_gpu_id
+            WHERE sg.server_id = ?
+            ORDER BY sg.pci_address
         "#;
 
         sqlx::query_as(query)
@@ -747,6 +771,7 @@ impl ServerRepository {
         self.sync_server_memory(&mut tx, server_id, &inventory.memory.dimms).await?;
         self.sync_server_disks(&mut tx, server_id, &inventory.disks).await?;
         self.sync_server_network_interfaces(&mut tx, server_id, &inventory.network.interfaces).await?;
+        self.sync_server_gpus(&mut tx, server_id, &inventory.gpus).await?;
         self.sync_server_bmc(&mut tx, server_id, &inventory.node.bmc).await?;
 
         // Commit transaction
@@ -1138,6 +1163,83 @@ impl ServerRepository {
         Ok(())
     }
 
+    async fn sync_server_gpus(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::MySql>,
+        server_id: i32,
+        inventory_gpus: &[GpuInfo]
+    ) -> Result<(), sqlx::Error> {
+        // Get existing GPUs
+        let existing: Vec<(i32, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT gpu_id, uuid, pci_address, driver_version FROM server_gpus WHERE server_id = ?"
+        )
+        .bind(server_id)
+        .fetch_all(&mut **tx)
+        .await?;
+
+        // Match by UUID (most reliable), fallback to PCI address
+        let mut existing_gpus: HashMap<String, (i32, Option<String>, Option<String>)> = HashMap::new();
+        for (gpu_id, uuid, pci_address, driver_version) in existing {
+            let key = uuid.clone().or(pci_address.clone()).unwrap_or_else(|| format!("gpu_{}", gpu_id));
+            existing_gpus.insert(key, (gpu_id, pci_address, driver_version));
+        }
+
+        // Process inventory GPUs
+        for gpu in inventory_gpus {
+            let gpu_type_id = self.find_or_create_gpu_type(tx, gpu).await?;
+            let key = gpu.uuid.clone().or(gpu.pci_address.clone()).unwrap_or_default();
+
+            if let Some((gpu_id, existing_pci, existing_driver)) = existing_gpus.remove(&key) {
+                // Update if any field changed
+                let needs_update = existing_pci != gpu.pci_address
+                    || existing_driver != gpu.driver_version;
+
+                if needs_update {
+                    sqlx::query(r#"
+                        UPDATE server_gpus SET
+                            component_gpu_id = ?,
+                            pci_address = ?,
+                            driver_version = ?,
+                            uuid = ?
+                        WHERE gpu_id = ?
+                    "#)
+                    .bind(gpu_type_id)
+                    .bind(&gpu.pci_address)
+                    .bind(&gpu.driver_version)
+                    .bind(&gpu.uuid)
+                    .bind(gpu_id)
+                    .execute(&mut **tx)
+                    .await?;
+                }
+            } else {
+                // Insert new GPU
+                sqlx::query(r#"
+                    INSERT INTO server_gpus (
+                        server_id, component_gpu_id, pci_address, driver_version, uuid
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                "#)
+                .bind(server_id)
+                .bind(gpu_type_id)
+                .bind(&gpu.pci_address)
+                .bind(&gpu.driver_version)
+                .bind(&gpu.uuid)
+                .execute(&mut **tx)
+                .await?;
+            }
+        }
+
+        // Delete GPUs no longer present
+        for (gpu_id, _, _) in existing_gpus.values() {
+            sqlx::query("DELETE FROM server_gpus WHERE gpu_id = ?")
+                .bind(gpu_id)
+                .execute(&mut **tx)
+                .await?;
+        }
+
+        Ok(())
+    }
+
     async fn sync_server_bmc(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::MySql>,
@@ -1348,6 +1450,25 @@ impl ServerRepository {
             .bind(iface.is_primary)
             .bind(&iface.bond_group)
             .bind(&iface.bond_master)
+            .execute(&mut **tx)
+            .await?;
+        }
+
+        // 5. Add GPUs
+        for gpu in &inventory.gpus {
+            let gpu_type_id = self.find_or_create_gpu_type(tx, gpu).await?;
+            
+            sqlx::query(r#"
+                INSERT INTO server_gpus (
+                    server_id, component_gpu_id, pci_address, driver_version, uuid
+                )
+                VALUES (?, ?, ?, ?, ?)
+            "#)
+            .bind(server_id)
+            .bind(gpu_type_id)
+            .bind(&gpu.pci_address)
+            .bind(&gpu.driver_version)
+            .bind(&gpu.uuid)
             .execute(&mut **tx)
             .await?;
         }
@@ -1576,6 +1697,45 @@ impl ServerRepository {
         .bind(&iface.vendor_name)
         .bind(&iface.device_name)
         .bind(iface.speed_mbps)
+        .execute(&mut **tx)
+        .await?;
+
+        Ok(result.last_insert_id() as i32)
+    }
+
+    async fn find_or_create_gpu_type(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::MySql>,
+        gpu: &GpuInfo
+    ) -> Result<i32, sqlx::Error> {
+        // Try to find existing by vendor and model
+        if let (Some(vendor), Some(model)) = (&gpu.vendor, &gpu.model) {
+            let existing: Option<(i32,)> = sqlx::query_as(r#"
+                SELECT component_gpu_id
+                FROM component_gpu_types
+                WHERE vendor = ? AND model = ?
+                LIMIT 1
+            "#)
+            .bind(vendor)
+            .bind(model)
+            .fetch_optional(&mut **tx)
+            .await?;
+
+            if let Some((id,)) = existing {
+                return Ok(id);
+            }
+        }
+
+        // Create new
+        let result = sqlx::query(r#"
+            INSERT INTO component_gpu_types (
+                vendor, model, vram_mb
+            )
+            VALUES (?, ?, ?)
+        "#)
+        .bind(&gpu.vendor)
+        .bind(&gpu.model)
+        .bind(gpu.vram_mb)
         .execute(&mut **tx)
         .await?;
 

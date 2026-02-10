@@ -91,3 +91,19 @@ INSERT IGNORE INTO component_switch_types (
 ('Arista', '7050SX-64', '7050SX', 64, 300, '1U', 1.0, 0, 48, 0, 4, 0, TRUE, TRUE, FALSE, TRUE),
 ('Juniper', 'EX2300-24T', 'EX2300', 24, 40, '1U', 1.0, 24, 0, 0, 0, 0, TRUE, TRUE, TRUE, TRUE),
 ('HPE', 'Aruba 6300M 48G', '6300M', 48, 290, '1U', 1.0, 48, 0, 0, 0, 0, TRUE, TRUE, FALSE, TRUE);
+
+-- ===================================================================
+-- BMC COMPONENT TYPES
+-- ===================================================================
+INSERT IGNORE INTO component_bmc_types (
+    vendor, model, firmware_version, 
+    supports_ipmi, supports_redfish, supports_web_interface, 
+    supports_kvm, supports_virtual_media,
+    has_dedicated_port, max_speed_mbps
+) VALUES 
+('Supermicro', 'ASPEED AST2500', '1.73.14', TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, 1000),
+('Dell', 'iDRAC9', '4.40.40.40', TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, 1000),
+('HPE', 'iLO 5', '2.78', TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, 1000),
+('ASRock Rack', 'ASPEED AST2500', '01.43.02', TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, 1000),
+('Lenovo', 'XClarity Controller', '4.10', TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, 1000),
+('Generic', 'ASPEED AST2400', '1.40.05', TRUE, FALSE, TRUE, FALSE, FALSE, TRUE, 1000);

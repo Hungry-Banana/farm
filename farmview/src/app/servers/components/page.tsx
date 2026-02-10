@@ -5,7 +5,7 @@ import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import { TabContainer, TabDefinition } from "@/components/ui/tab/TabContainer";
 import TableSection from "@/components/ui/table/TableSection";
 import { getComponentCatalog } from "@/lib/components";
-import { ComponentCatalog, ComponentMotherboardType, ComponentCpuType, ComponentMemoryType, ComponentGpuType, ComponentDiskType, ComponentNetworkType } from "@/types/components";
+import { ComponentCatalog, ComponentMotherboardType, ComponentCpuType, ComponentMemoryType, ComponentGpuType, ComponentDiskType, ComponentNetworkType, ComponentBmcType } from "@/types/components";
 
 // Unique motherboard models component
 const MotherboardModelsTab = ({ motherboards = [] }: { motherboards?: ComponentMotherboardType[] }) => {
@@ -428,6 +428,92 @@ const NetworkModelsTab = ({ networkInterfaces = [] }: { networkInterfaces?: Comp
   );
 };
 
+// BMC Models Tab
+const BMCModelsTab = ({ bmcs = [] }: { bmcs?: ComponentBmcType[] }) => {
+  const getCapabilityBadge = (supports: boolean | undefined, label: string) => {
+    if (supports === undefined) return null;
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-theme text-xs font-medium border ${
+        supports 
+          ? 'text-green-600 bg-green-500/10 border-green-500/20' 
+          : 'text-gray-500 bg-gray-500/10 border-gray-500/20'
+      }`}>
+        {supports ? '✓' : '✗'} {label}
+      </span>
+    );
+  };
+
+  const totalBmcCount = bmcs.length;
+  const vendors = [...new Set(bmcs.map(bmc => bmc.vendor))];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-foreground">BMC Models</h3>
+        <div className="text-sm flex items-center gap-2">
+          <span className="text-blue-600 font-semibold">{totalBmcCount} models</span>
+          <span className="text-muted-foreground">•</span>
+          <span className="text-green-600 font-semibold">{vendors.length} vendors</span>
+        </div>
+      </div>
+
+      {bmcs.length > 0 ? (
+        <TableSection
+          columns={[
+            { key: 'model', label: 'Model' },
+            { key: 'vendor', label: 'Vendor' },
+            { 
+              key: 'firmware_version', 
+              label: 'Firmware',
+              render: (value) => value || 'N/A'
+            },
+            { 
+              key: 'supports_ipmi', 
+              label: 'IPMI',
+              render: (value) => getCapabilityBadge(value, 'IPMI')
+            },
+            { 
+              key: 'supports_redfish', 
+              label: 'Redfish',
+              render: (value) => getCapabilityBadge(value, 'Redfish')
+            },
+            { 
+              key: 'supports_kvm', 
+              label: 'KVM',
+              render: (value) => getCapabilityBadge(value, 'KVM')
+            },
+            { 
+              key: 'supports_virtual_media', 
+              label: 'Virtual Media',
+              render: (value) => getCapabilityBadge(value, 'VM')
+            },
+            { 
+              key: 'max_speed_mbps', 
+              label: 'Max Speed',
+              render: (value) => (
+                <span className="text-sm font-medium">
+                  {value ? `${value} Mbps` : 'N/A'}
+                </span>
+              )
+            },
+            { 
+              key: 'created_at', 
+              label: 'Created At',
+              render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A'
+            }
+          ]}
+          data={bmcs}
+          keyField="component_bmc_id"
+        />
+      ) : (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>No BMC data available in current inventory</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function ServerComponentsPage() {
   const [loading, setLoading] = useState(true);
   const [componentCatalog, setComponentCatalog] = useState<ComponentCatalog>({
@@ -436,7 +522,8 @@ export default function ServerComponentsPage() {
     disks: [],
     network_interfaces: [],
     gpus: [],
-    motherboards: []
+    motherboards: [],
+    bmcs: []
   });
 
   const componentTabs: TabDefinition[] = [
@@ -445,7 +532,8 @@ export default function ServerComponentsPage() {
     { id: "memory", label: "Memory Models", icon: "" },
     { id: "gpus", label: "GPU Models", icon: "" },
     { id: "disks", label: "Disk Models", icon: "" },
-    { id: "network", label: "Network Interfaces", icon: "" }
+    { id: "network", label: "Network Interfaces", icon: "" },
+    { id: "bmcs", label: "BMC Models", icon: "" }
   ];
 
   useEffect(() => {
@@ -504,7 +592,8 @@ export default function ServerComponentsPage() {
           memory: <RAMModelsTab memory={componentCatalog.memory} />,
           gpus: <GPUModelsTab gpus={componentCatalog.gpus} />,
           disks: <DiskModelsTab disks={componentCatalog.disks} />,
-          network: <NetworkModelsTab networkInterfaces={componentCatalog.network_interfaces} />
+          network: <NetworkModelsTab networkInterfaces={componentCatalog.network_interfaces} />,
+          bmcs: <BMCModelsTab bmcs={componentCatalog.bmcs} />
         }}
         contentClassName="p-6"
       />

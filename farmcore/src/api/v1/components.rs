@@ -81,6 +81,15 @@ pub async fn index() -> impl Responder {
             .add_example(ExampleDoc::new("Get motherboard types", "/api/v1/components/motherboards"))
             .add_response_code(ResponseCodeDoc::new(200, "Success"))
             .add_response_code(ResponseCodeDoc::new(400, "Invalid parameters"))
+    )
+    .add_endpoint(
+        EndpointDoc::new("/api/v1/components/bmcs", HttpMethod::Get, 
+            "Get all BMC component types with pagination")
+            .add_query_parameter(ParameterDoc::new("page", ParameterType::Integer, "Page number", false).with_default("1"))
+            .add_query_parameter(ParameterDoc::new("per_page", ParameterType::Integer, "Items per page", false).with_default("10"))
+            .add_example(ExampleDoc::new("Get BMC types", "/api/v1/components/bmcs"))
+            .add_response_code(ResponseCodeDoc::new(200, "Success"))
+            .add_response_code(ResponseCodeDoc::new(400, "Invalid parameters"))
     );
 
     let response = ApiResponse::success(documentation);
@@ -257,6 +266,28 @@ pub async fn get_all_motherboard_types(
     }
 }
 
+#[get("/bmcs")]
+pub async fn get_all_bmc_types(
+    app_state: web::Data<AppState>,
+    query: web::Query<CommonPaginationQuery>
+) -> impl Responder {
+    match app_state.component_repo().get_all_bmc_types(query.into_inner()).await {
+        Ok(bmc_types) => {
+            let response = ApiResponse::success(bmc_types);
+            HttpResponse::Ok().json(response)
+        },
+        Err(e) => {
+            log::error!("Database error fetching BMC types: {}", e);
+            
+            let response = ApiResponse::<()>::error(
+                "DATABASE_ERROR",
+                "Failed to fetch BMC component types"
+            );
+            HttpResponse::InternalServerError().json(response)
+        }
+    }
+}
+
 pub fn configure_component_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/components")
@@ -269,5 +300,6 @@ pub fn configure_component_routes(cfg: &mut web::ServiceConfig) {
             .service(get_all_network_types)
             .service(get_all_gpu_types)
             .service(get_all_motherboard_types)
+            .service(get_all_bmc_types)
     );
 }

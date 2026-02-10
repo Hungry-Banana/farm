@@ -67,6 +67,22 @@ pub struct ComponentGpuType {
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+#[derive(FromRow, Debug, Clone, Serialize, Deserialize)]
+pub struct ComponentBmcType {
+    pub component_bmc_id: i32,
+    pub vendor: String,
+    pub model: String,
+    pub firmware_version: Option<String>,
+    pub supports_ipmi: Option<bool>,
+    pub supports_redfish: Option<bool>,
+    pub supports_web_interface: Option<bool>,
+    pub supports_kvm: Option<bool>,
+    pub supports_virtual_media: Option<bool>,
+    pub has_dedicated_port: Option<bool>,
+    pub max_speed_mbps: Option<i32>,
+    pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
 // ===================================================================
 // COMPONENT CATALOG/MANAGEMENT STRUCTS
 // ===================================================================
@@ -80,6 +96,7 @@ pub struct ComponentCatalog {
     pub network_interfaces: Vec<ComponentNetworkType>,
     pub gpus: Vec<ComponentGpuType>,
     pub motherboards: Vec<ComponentMotherboardType>,
+    pub bmcs: Vec<ComponentBmcType>,
 }
 
 /// Summary stats for component catalog
@@ -91,4 +108,5 @@ pub struct ComponentCatalogStats {
     pub total_network_types: i32,
     pub total_gpu_types: i32,
     pub total_motherboard_types: i32,
+    pub total_bmc_types: i32,
 }

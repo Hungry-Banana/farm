@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { DefaultServerIcon } from "@/assets/icons";
 import { getServerById } from "@/lib/servers";
-import { ServerCpuUI, ServerDiskUI, ServerGpuDetail, ServerInventory, ServerMemoryUI, ServerWithAllComponents } from "@/types/server";
+import { ServerCpuUI, ServerDiskUI, ServerGpuDetail, ServerInventory, ServerMemoryUI, ServerNetworkUI, ServerWithAllComponents } from "@/types/server";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import FieldSection from "@/components/ui/FieldSection";
 import TableSection from "@/components/ui/table/TableSection";
@@ -37,7 +37,7 @@ const NetworkSection = ({ fields }: { fields: Array<{ label: string; value: any;
 
 const CPUInventory = ({ cpu }: { cpu: ServerCpuUI[] }) => {
   return (
-		<div className="p-6">
+		<div className="p-5">
 			<TableSection
 			columns={[
 				{ key: 'socket', label: 'Socket' },
@@ -58,7 +58,7 @@ const CPUInventory = ({ cpu }: { cpu: ServerCpuUI[] }) => {
 
 const RAMInventory = ({ ram }: { ram: ServerMemoryUI[] }) => {
   return (
-		<div className="p-6">
+		<div className="p-5">
 			<TableSection
 			columns={[
 				{ key: 'slot', label: 'Slot' },
@@ -79,7 +79,7 @@ const RAMInventory = ({ ram }: { ram: ServerMemoryUI[] }) => {
 
 const StorageInventory = ({ storage }: { storage: ServerDiskUI[] }) => {
   return (
-		<div className="p-6">
+		<div className="p-5">
 			<TableSection
 			columns={[
 				{ key: 'device_name', label: 'Device' },
@@ -101,18 +101,71 @@ const StorageInventory = ({ storage }: { storage: ServerDiskUI[] }) => {
 
 const GPUInventory = ({ gpus }: { gpus: ServerGpuDetail[] }) => {
   return (
-        <TableSection
-          columns={[
-            { key: 'name', label: 'Name' },
-            { key: 'vendor', label: 'Vendor' },
-            { key: 'memory_gb', label: 'Memory (GB)'},
-            { key: 'pci_slot', label: 'PCI Slot'},
-			{ key: 'driver_version', label: 'Driver Version' },
-          ]}
-          data={gpus}
-          keyField="gpu_inventory_id"
-		  searchable={false}
-        />
+		<div className="p-5">
+			<TableSection
+			columns={[
+				{ key: 'pci_address', label: 'PCI Address'},
+				{ key: 'vendor', label: 'Vendor' },
+				{ key: 'model', label: 'Model' },
+				{ key: 'vram_mb', label: 'VRAM (MB)'},
+				{ key: 'driver_version', label: 'Driver Version' },
+				{ key: 'uuid', label: 'UUID' },
+			]}
+			data={gpus}
+			keyField="gpu_id"
+			searchable={false}
+			/>
+		</div>
+    );
+};
+
+const NICInventory = ({ nics }: { nics: ServerNetworkUI[] }) => {
+  return (
+		<div className="p-5">
+			<TableSection
+			columns={[
+				{ key: 'name', label: 'Interface' },
+				{ key: 'mac_address', label: 'MAC Address' },
+				{ key: 'ip_address', label: 'IP Address'},
+				{ key: 'speed_mbps', label: 'Speed (Mbps)' },
+				{ key: 'pci_address', label: 'PCI Address' },
+				{ key: 'manufacturer', label: 'Manufacturer' },
+				{ key: 'model', label: 'Model' },
+				{ key: 'firmware_version', label: 'Firmware' },
+				{ key: 'is_primary', label: 'Primary' },
+			]}
+			data={nics}
+			keyField="interface_id"
+			searchable={false}
+			/>
+		</div>
+    );
+};
+
+const MotherboardInventory = ({ motherboard }: { motherboard: any }) => {
+  return (
+		<div className="p-6">
+			<div className="rounded-theme bg-accent/10 hover:bg-accent/20 transition-colors">
+				<div className="grid grid-cols-1 gap-4 text-sm text-foreground font-mono">
+					<FieldSection fields={[
+						{ label: 'Manufacturer', value: motherboard.manufacturer, icon: '' },
+						{ label: 'Model', value: motherboard.model, icon: '' },
+						{ label: 'Serial Number', value: motherboard.serial_number, icon: '' },
+						{ label: 'Version', value: motherboard.version, icon: '' },
+					]} />
+
+					<FieldSection fields={[
+						{ label: 'BIOS Version', value: motherboard.bios_version, icon: '' },
+						{ label: 'BIOS Release Date', value: motherboard.bios_release_date, icon: '' },
+					]} />
+
+					<FieldSection fields={[
+						{ label: 'BMC Firmware Version', value: motherboard.bmc_firmware_version, icon: '' },
+						{ label: 'BMC Release Date', value: motherboard.bmc_release_date, icon: '' },
+					]} />
+				</div>
+			</div>
+		</div>
     );
 };
     
@@ -121,7 +174,7 @@ const inventoryTabs: TabDefinition[] = [
     { id: "cpus", label: "Processors", icon: "" },
     { id: "ram", label: "Memory", icon: "" },
     { id: "disks", label: "Storage", icon: "" },
-    { id: "gpus", label: "Graphics", icon: "" },
+    { id: "gpus", label: "GPU", icon: "" },
     { id: "nics", label: "Network", icon: "" },
     { id: "motherboard", label: "Motherboard", icon: "" },
     { id: "vms", label: "Virtual Machines", icon: "" },
@@ -133,7 +186,6 @@ const monitoringTabs: TabDefinition[] = [
     { id: "storage-metrics", label: "Storage Metrics", icon: "" },
     { id: "gpu-metrics", label: "GPU Metrics", icon: "" },
     { id: "network-metrics", label: "Network Metrics", icon: "" },
-    { id: "custom-metrics", label: "Custom Metrics", icon: "" },
     { id: "system-logs", label: "System Logs", icon: "" }
 ];
 
@@ -201,6 +253,19 @@ export default function ServerPage() {
 
 	const currentStatus = statusConfig[server.status] || statusConfig['DEFAULT'];
 
+	// Network interfaces
+	const primaryNic = server.network_interfaces?.find((nic: any) => nic.is_primary) || server.network_interfaces?.[0];
+	const bmcInterface = server.bmc_interfaces?.[0];
+
+	// Credentials
+	const osCredential = server.credentials?.find((cred: any) => cred.credential_type === 'OS');
+	const serverPasswordDisplay = osCredential?.password 
+		? (showPasswords.serverPassword ? osCredential.password : '••••••••') 
+		: 'N/A';
+	const bmcPasswordDisplay = bmcInterface?.password 
+		? (showPasswords.bmcPassword ? bmcInterface.password : '••••••••') 
+		: 'N/A';
+
 	return (
 		<div className="space-y-6">
             <Breadcrumb />
@@ -242,7 +307,6 @@ export default function ServerPage() {
                     <div className="grid grid-cols-2 gap-5">
                         {/* Left Column: Server Information */}
                         <div className="space-y-6">
-                            
                             <div className=" rounded-theme bg-accent/10 hover:bg-accent/20 transition-colors">
                                 <div className="space-y-4 text-sm text-foreground font-mono">
                                     {/* Basic Information Section */}
@@ -279,6 +343,75 @@ export default function ServerPage() {
                                         { label: 'Architecture', value: server.architecture, icon: '' },
                                         { label: 'Chassis Serial', value: server.chassis_serial_number, icon: '' }
                                     ]} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className=" rounded-theme bg-accent/10 hover:bg-accent/20 transition-colors">
+                                <div className="space-y-4 text-sm text-foreground font-mono">
+
+                                    {/* Primary Network Interface Section */}
+                                    <FieldSection fields={[
+                                        { label: 'Primary IP', value: primaryNic?.ip_address || 'N/A', icon: '' },
+                                        { label: 'Primary MAC', value: primaryNic?.mac_address || 'N/A', icon: '' },
+                                        { label: 'Switch', value: primaryNic?.switch_name || 'N/A', icon: '' },
+                                        { label: 'Port', value: primaryNic?.switch_port_name || 'N/A', icon: '' }
+                                    ]} />
+
+                                    {/* Separator Line */}
+                                    <div className="border-t border-island_border my-3"></div>
+
+                                    {/* BMC Network Interface Section */}
+                                    <FieldSection fields={[
+                                        { label: 'BMC IP', value: bmcInterface?.ip_address || 'N/A', icon: '' },
+                                        { label: 'BMC MAC', value: bmcInterface?.mac_address || 'N/A', icon: '' },
+                                        { label: 'BMC Switch', value: bmcInterface?.switch_name || 'N/A', icon: '' },
+                                        { label: 'BMC Port', value: bmcInterface?.switch_port_name || 'N/A', icon: '' }
+                                    ]} />
+
+                                    {/* Separator Line */}
+                                    <div className="border-t border-island_border my-3"></div>
+
+                                    {/* Server Credentials Section */}
+                                    <FieldSection fields={[
+                                        { label: '👤 Server Username', value: osCredential?.username || 'N/A', icon: '' },
+                                        { label: '👤 BMC Username', value: bmcInterface?.username || 'N/A', icon: '' },
+                                        { 
+                                            label: '🔑 Server Password',
+                                            value: (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    {osCredential?.password && (
+                                                        <button
+                                                            onClick={() => togglePassword('serverPassword')}
+                                                            className="text-muted-foreground hover:text-foreground transition-colors"
+                                                        >
+                                                            {showPasswords.serverPassword ? '👁️' : '👁️‍🗨️'}
+                                                        </button>
+                                                    )}
+                                                    <span>{serverPasswordDisplay}</span>
+                                                </div>
+                                            ), 
+                                            icon: '' 
+                                        },
+                                        { 
+                                            label: '🔑 BMC Password', 
+                                            value: (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    {bmcInterface?.password && (
+                                                        <button
+                                                            onClick={() => togglePassword('bmcPassword')}
+                                                            className="text-muted-foreground hover:text-foreground transition-colors"
+                                                        >
+                                                            {showPasswords.bmcPassword ? '👁️' : '👁️‍🗨️'}
+                                                        </button>
+                                                    )}
+                                                    <span>{bmcPasswordDisplay}</span>
+                                                </div>
+                                            ), 
+                                            icon: '' 
+                                        }
+                                    ]} />
 
                                     {/* Separator Line */}
                                     <div className="border-t border-island_border my-3"></div>
@@ -291,6 +424,8 @@ export default function ServerPage() {
                                         { label: 'BMC Release Date', value: inventory?.motherboard.bmc_release_date, icon: '' }
                                     ]} />
 
+
+
                                     {/* Separator Line */}
                                     <div className="border-t border-island_border my-3"></div>
 
@@ -301,179 +436,6 @@ export default function ServerPage() {
                                         { label: 'Last Inventory', value: server.last_inventory_at ? new Date(server.last_inventory_at).toLocaleDateString() : 'N/A', icon: '' },
                                         { label: 'Created Date', value: server.created_at ? new Date(server.created_at).toLocaleDateString() : 'N/A', icon: '' }
                                     ]} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Vertical Separator */}
-                        <div className="relative">
-                            <div className="absolute left-0 top-0 bottom-0 w-px bg-island_border"></div>
-                            <div className="pl-8">
-                                {/* Right Column: Network Configuration */}
-                                <div className="space-y-6">
-                                    <h4 className="font-medium text-foreground flex items-center gap-2">
-                                        <span>🌐</span>
-                                        Network Configuration
-                                    </h4>
-                                    
-                                    <div className="">
-                                        {/* Primary Network Interface */}
-                                        {server.network_interfaces && server.network_interfaces.length > 0 ? (
-                                            (() => {
-                                                const primaryNic = server.network_interfaces.find((nic: any) => nic.is_primary) || server.network_interfaces[0];
-                                                return (
-                                                    <div className="space-y-3">
-                                                        {/* Primary Network Info */}
-                                                        <NetworkSection fields={[
-                                                            { label: 'Primary IP', value: primaryNic.ip_address },
-                                                            { label: 'Primary MAC', value: primaryNic.mac_address },
-                                                            { 
-                                                                label: 'Switch', 
-                                                                value: primaryNic.switch_name,
-                                                                link: primaryNic.switch_id ? {
-                                                                    href: `/networking/switches/${primaryNic.switch_id}`,
-                                                                    text: primaryNic.switch_name
-                                                                } : undefined
-                                                            },
-                                                            { label: 'Port', value: primaryNic.switch_port_name }
-                                                        ]} />
-                                                    </div>
-                                                );
-                                            })()
-                                        ) : (
-                                            <div className="text-sm text-muted-foreground text-center p-4">
-                                                Network interface details will be populated after inventory collection.
-                                            </div>
-                                        )}
-                                        
-                                        {/* BMC Network Connection */}
-                                        {(() => {
-                                            const bmcInterface = server.bmc_interfaces && server.bmc_interfaces.length > 0 ? server.bmc_interfaces[0] : null;
-                                            if (bmcInterface) {
-                                                return (
-                                                    <div className="space-y-3">
-                                                        {/* BMC Network Info */}
-                                                        <NetworkSection fields={[
-                                                            { label: 'BMC IP', value: bmcInterface.ip_address },
-                                                            { label: 'BMC MAC', value: bmcInterface.mac_address },
-                                                            { 
-                                                                label: 'BMC Switch', 
-                                                                value: bmcInterface.switch_name,
-                                                                link: bmcInterface.switch_id ? {
-                                                                    href: `/networking/switches/${bmcInterface.switch_id}`,
-                                                                    text: bmcInterface.switch_name
-                                                                } : undefined
-                                                            },
-                                                            { label: 'BMC Port', value: bmcInterface.switch_port_name }
-                                                        ]} />
-                                                    </div>
-                                                );
-                                            }
-                                        })()}
-                                    </div>
-                                    
-                                    {/* Credentials Section */}
-                                    <div className="mt-6 pt-4 border-t border-island_border">
-                                        <h4 className="font-medium text-foreground flex items-center gap-2 mb-4">
-                                            <span>🔐</span>
-                                            Credentials
-                                        </h4>
-                                        
-                                        <div className="grid grid-cols-2 gap-6">
-                                            {/* Server Credentials */}
-                                            <div className="p-3 rounded-theme bg-accent/10 hover:bg-accent/20 transition-colors">
-                                                <div className="space-y-3 text-sm text-foreground font-mono">
-                                                    {(() => {
-                                                        const osCredential = server.credentials && server.credentials.find((cred: any) => cred.credential_type === 'OS');
-                                                        return (
-                                                            <>
-                                                                <div className="text-center">
-                                                                    <div className="font-medium text-muted-foreground mb-1">👤 Server Username:</div>
-                                                                    <div className="font-semibold">{osCredential?.username || 'N/A'}</div>
-                                                                </div>
-                                                                <div className="text-center">
-                                                                    <div className="font-medium text-muted-foreground mb-1">🔑 Server Password:</div>
-                                                                    <div className="flex items-center justify-center gap-2">
-                                                                        {osCredential?.password && (
-                                                                            <button
-                                                                                onClick={() => togglePassword('serverPassword')}
-                                                                                className="text-muted-foreground hover:text-foreground transition-colors"
-                                                                            >
-                                                                                {showPasswords.serverPassword ? '👁️' : '👁️‍🗨️'}
-                                                                            </button>
-                                                                        )}
-                                                                        <div className="font-semibold">
-                                                                            {showPasswords.serverPassword ? osCredential?.password : '••••••••'}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            </div>
-
-                                            {/* BMC Credentials */}
-                                            <div className="p-3 rounded-theme bg-accent/10 hover:bg-accent/20 transition-colors">
-                                                <div className="space-y-3 text-sm text-foreground font-mono">
-                                                    {(() => {
-                                                        const bmcInterface = server.bmc_interfaces && server.bmc_interfaces.length > 0 ? server.bmc_interfaces[0] : null;
-                                                        if (bmcInterface) {
-                                                            return (
-                                                                <>
-                                                                    <div className="text-center">
-                                                                        <div className="font-medium text-muted-foreground mb-1">👤 BMC Username:</div>
-                                                                        <div className="font-semibold">{bmcInterface.username || 'N/A'}</div>
-                                                                    </div>
-                                                                    <div className="text-center">
-                                                                        <div className="font-medium text-muted-foreground mb-1">🔑 BMC Password:</div>
-                                                                        <div className="flex items-center justify-center gap-2">
-                                                                            {bmcInterface.password && (
-                                                                                <button
-                                                                                    onClick={() => togglePassword('bmcPassword')}
-                                                                                    className="text-muted-foreground hover:text-foreground transition-colors"
-                                                                                >
-                                                                                    {showPasswords.bmcPassword ? '👁️' : '👁️‍🗨️'}
-                                                                                </button>
-                                                                            )}
-                                                                            <div className="font-semibold">
-                                                                                {showPasswords.bmcPassword ? bmcInterface.password : '••••••••'}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </>
-                                                            );
-                                                        } else {
-                                                            return (
-                                                                <>
-                                                                    <div className="text-center">
-                                                                        <div className="font-medium text-muted-foreground mb-1">👤 BMC Username:</div>
-                                                                        <div className="font-semibold">{server.bmc_username || 'N/A'}</div>
-                                                                    </div>
-                                                                    <div className="text-center">
-                                                                        <div className="font-medium text-muted-foreground mb-1">🔑 BMC Password:</div>
-                                                                        <div className="flex items-center justify-center gap-2">
-                                                                            {server.bmc_password && (
-                                                                                <button
-                                                                                    onClick={() => togglePassword('bmcPassword')}
-                                                                                    className="text-muted-foreground hover:text-foreground transition-colors"
-                                                                                >
-                                                                                    {showPasswords.bmcPassword ? '👁️' : '👁️‍🗨️'}
-                                                                                </button>
-                                                                            )}
-                                                                            <div className="font-semibold">
-                                                                                {showPasswords.bmcPassword ? server.bmc_password : '••••••••'}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </>
-                                                            );
-                                                        }
-                                                    })()}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -503,7 +465,9 @@ export default function ServerPage() {
 								cpus: <CPUInventory cpu={inventory.cpus} />,
 								ram: <RAMInventory ram={inventory.ram} />,
 								disks: <StorageInventory storage={inventory.disks} />,
-								gpu: <GPUInventory gpus={inventory.gpus} />,
+								gpus: <GPUInventory gpus={inventory.gpus} />,
+								nics: <NICInventory nics={inventory.nics} />,
+								motherboard: <MotherboardInventory motherboard={inventory.motherboard} />,
 								monitoring: <MonitorTab />,
 							}}
 					  	/>

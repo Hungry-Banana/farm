@@ -182,29 +182,29 @@ INSERT IGNORE INTO server_network_interfaces (
 -- SERVER BMC INTERFACES (Baseboard Management Controllers)
 -- ===================================================================
 INSERT IGNORE INTO server_bmc_interfaces (
-    server_id, component_network_id, name, mac_address, ip_address,
+    server_id, component_bmc_id, name, mac_address, ip_address,
     username, password, switch_port_id, firmware_version, release_date
 ) VALUES 
--- dev-web-01 BMC
-(1, 6, 'bmc0', '14:18:77:BE:92:10', '192.168.100.10', 'ADMIN', 'BMCDev123!', 1, '6.10.30.00', '2023-02-01'),
+-- dev-web-01 BMC (Dell iDRAC9)
+(1, 2, 'bmc0', '14:18:77:BE:92:10', '192.168.100.10', 'ADMIN', 'BMCDev123!', 1, '6.10.30.00', '2023-02-01'),
 
--- dev-db-01 BMC
-(2, 6, 'bmc0', '14:18:77:BE:92:11', '192.168.100.11', 'ADMIN', 'BMCDev123!', 2, '6.10.30.00', '2023-02-01'),
+-- dev-db-01 BMC (Dell iDRAC9)
+(2, 2, 'bmc0', '14:18:77:BE:92:11', '192.168.100.11', 'ADMIN', 'BMCDev123!', 2, '6.10.30.00', '2023-02-01'),
 
--- dev-storage-01 BMC
-(3, 6, 'bmc0', '94:40:C9:3A:1B:12', '192.168.100.12', 'ADMIN', 'BMCDev123!', 3, '2.78', '2023-01-01'),
+-- dev-storage-01 BMC (HPE iLO 5)
+(3, 3, 'bmc0', '94:40:C9:3A:1B:12', '192.168.100.12', 'ADMIN', 'BMCDev123!', 3, '2.78', '2023-01-01'),
 
--- prod-web-01 BMC
-(4, 6, 'bmc0', '00:25:90:EC:B4:10', '10.0.100.10', 'ADMIN', 'BMCProd789#', 3, '1.73.14', '2022-11-15'),
+-- prod-web-01 BMC (Supermicro ASPEED AST2500)
+(4, 1, 'bmc0', '00:25:90:EC:B4:10', '10.0.100.10', 'ADMIN', 'BMCProd789#', 3, '1.73.14', '2022-11-15'),
 
--- prod-db-01 BMC
-(5, 6, 'bmc0', '00:25:90:EC:B4:11', '10.0.100.11', 'ADMIN', 'BMCProd789#', 4, '1.73.14', '2022-11-15'),
+-- prod-db-01 BMC (Supermicro ASPEED AST2500)
+(5, 1, 'bmc0', '00:25:90:EC:B4:11', '10.0.100.11', 'ADMIN', 'BMCProd789#', 4, '1.73.14', '2022-11-15'),
 
--- maint-util-01 BMC
+-- maint-util-01 BMC (Generic ASPEED AST2400)
 (6, 6, 'bmc0', 'B4:2E:99:A1:C7:10', '192.168.200.10', 'ADMIN', 'BMCMaint999@', NULL, '1.40.05', '2023-04-15'),
 
--- new-srv-01 BMC - not yet configured
-(7, 6, 'bmc0', '70:85:C2:7F:89:10', '192.168.50.10', 'ADMIN', 'BMCDefault000!', NULL, '1.25.02', '2023-07-20');
+-- new-srv-01 BMC (ASRock Rack ASPEED AST2500)
+(7, 4, 'bmc0', '70:85:C2:7F:89:10', '192.168.50.10', 'ADMIN', 'BMCDefault000!', NULL, '1.25.02', '2023-07-20');
 
 -- ===================================================================
 -- SERVER CREDENTIALS (OS Authentication Only)

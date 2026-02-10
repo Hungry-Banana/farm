@@ -92,10 +92,6 @@ CREATE TABLE IF NOT EXISTS component_network_types (
     INDEX idx_vendor_device (vendor_name, device_name)
 );
 
--- Insert default BMC component type for BMC interfaces
-INSERT IGNORE INTO component_network_types (vendor_name, device_name, driver, max_speed_mbps)
-VALUES ('BMC', 'Baseboard Management Controller', 'bmc', 100);
-
 -- GPU Component Types
 CREATE TABLE IF NOT EXISTS component_gpu_types (
     component_gpu_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -143,6 +139,32 @@ CREATE TABLE IF NOT EXISTS component_switch_types (
     INDEX idx_vendor_model (vendor, model),
     INDEX idx_form_factor (form_factor),
     INDEX idx_port_count (total_ports)
+);
+
+-- BMC (Baseboard Management Controller) Component Types
+CREATE TABLE IF NOT EXISTS component_bmc_types (
+    component_bmc_id INT PRIMARY KEY AUTO_INCREMENT,
+    
+    vendor VARCHAR(255) NOT NULL,
+    model VARCHAR(255) NOT NULL,
+    firmware_version VARCHAR(255),  -- Latest/recommended firmware version for this BMC model
+    
+    -- Management capabilities
+    supports_ipmi BOOLEAN DEFAULT TRUE,
+    supports_redfish BOOLEAN DEFAULT FALSE,
+    supports_web_interface BOOLEAN DEFAULT TRUE,
+    supports_kvm BOOLEAN DEFAULT FALSE,
+    supports_virtual_media BOOLEAN DEFAULT FALSE,
+    
+    -- Network specifications
+    has_dedicated_port BOOLEAN DEFAULT TRUE,
+    max_speed_mbps INT DEFAULT 1000,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE KEY uk_bmc_model (vendor, model, firmware_version),
+    INDEX idx_vendor_model (vendor, model),
+    INDEX idx_capabilities (supports_ipmi, supports_redfish)
 );
 
 -- ===================================================================
@@ -364,8 +386,8 @@ CREATE TABLE IF NOT EXISTS server_network_interfaces (
 -- ===================================================================
 CREATE TABLE IF NOT EXISTS server_bmc_interfaces (
     bmc_interface_id INT PRIMARY KEY AUTO_INCREMENT,
-    server_id INT NOT NULL DEFAULT 0, -- 0 = unassigned/pre-onboarding BMC
-    component_network_id INT NOT NULL,
+    server_id INT NULL, -- NULL = unassigned/pre-onboarding BMC
+    component_bmc_id INT NOT NULL,
     
     name VARCHAR(64) NOT NULL DEFAULT 'bmc0',
     mac_address VARCHAR(17),
@@ -375,14 +397,9 @@ CREATE TABLE IF NOT EXISTS server_bmc_interfaces (
     username VARCHAR(255),
     password TEXT,
     
-    -- BMC-specific information
+    -- BMC-specific information (actual installed version)
     firmware_version VARCHAR(255),
     release_date DATE,
-    
-    -- BMC capabilities
-    supports_ipmi BOOLEAN DEFAULT TRUE,
-    supports_redfish BOOLEAN DEFAULT FALSE,
-    supports_web_interface BOOLEAN DEFAULT TRUE,
     
     -- Connection status
     is_accessible BOOLEAN DEFAULT FALSE,
@@ -393,19 +410,15 @@ CREATE TABLE IF NOT EXISTS server_bmc_interfaces (
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Note: Foreign key constraint will be added after servers table creation
-    -- to allow server_id = 0 for unassigned BMCs
         
     CONSTRAINT fk_bmc_component
-        FOREIGN KEY (component_network_id) REFERENCES component_network_types(component_network_id)
+        FOREIGN KEY (component_bmc_id) REFERENCES component_bmc_types(component_bmc_id)
         ON DELETE RESTRICT,
         
     -- Note: switch_port_id will reference m002_create_switches.switch_ports(switch_port_id)
-    -- Foreign key constraint added after switch tables exist
         
     UNIQUE KEY uk_server_bmc_name (server_id, name),
-    INDEX idx_bmc_component_network (component_network_id),
+    INDEX idx_bmc_component (component_bmc_id),
     INDEX idx_bmc_mac_address (mac_address),
     INDEX idx_bmc_ip_address (ip_address),
     INDEX idx_bmc_accessible (is_accessible),

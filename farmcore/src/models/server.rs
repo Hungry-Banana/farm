@@ -90,6 +90,7 @@ pub struct ServerWithAllComponents {
     pub memory: Vec<ServerMemoryDetail>,
     pub disks: Vec<ServerDiskDetail>,
     pub network_interfaces: Vec<ServerNetworkDetail>,
+    pub gpus: Vec<ServerGpuDetail>,
     pub bmc_interfaces: Vec<ServerBmcDetail>,
     pub credentials: Vec<ServerCredential>,
     pub motherboard_detail: Option<ServerMotherboardDetail>,
@@ -147,6 +148,20 @@ pub struct ServerDiskDetail {
     pub bus_type: Option<String>,
     pub form_factor: Option<String>,
     pub rpm: Option<i32>,
+}
+
+// GPU component details
+#[derive(FromRow, Debug, Clone, Serialize, Deserialize)]
+pub struct ServerGpuDetail {
+    // Server-specific GPU data
+    pub gpu_id: i32,
+    pub pci_address: Option<String>,
+    pub driver_version: Option<String>,
+    pub uuid: Option<String>,
+    // Component reference data (from JOIN with component_gpu_types)
+    pub vendor: Option<String>,
+    pub model: Option<String>,
+    pub vram_mb: Option<i32>,
 }
 
 // Network interface component details

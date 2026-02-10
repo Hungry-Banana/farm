@@ -109,6 +109,23 @@ export interface ServerDiskUI {
   rpm?: number | null;
 }
 
+export interface ServerNetworkUI {
+  interface_id: number;
+  name: string;
+  mac_address?: string;
+  ip_address?: string | null;
+  interface_type?: string;
+  speed_mbps?: number;
+  pci_address?: string | null;
+  manufacturer?: string;
+  model?: string;
+  firmware_version?: string | null;
+  is_primary: string;
+  switch_name?: string | null;
+  switch_port_name?: string | null;
+  switch_id?: number | null;
+}
+
 export interface ServerNetworkDetail {
   interface_id: number;
   name: string;
@@ -180,15 +197,13 @@ export interface ServerBMCDetail {
 }
 
 export interface ServerGpuDetail {
-  id: string;
-  name: string;
-  vendor: 'NVIDIA' | 'AMD' | 'Intel';
-  memory_gb: number;
-  pci_slot: string;
+  gpu_id: number;
+  pci_address?: string;
   driver_version?: string;
-  temperature?: number;
-  power_usage?: number;
-  utilization?: number;
+  uuid?: string;
+  vendor?: string;
+  model?: string;
+  vram_mb?: number;
 }
 
 export interface ServerInventory {
@@ -196,7 +211,7 @@ export interface ServerInventory {
   server_name: string;
   disks: ServerDiskUI[];
   gpus: ServerGpuDetail[];
-  nics: ServerNetworkDetail[];
+  nics: ServerNetworkUI[];
   cpus: ServerCpuUI[];
   ram: ServerMemoryUI[];
   motherboard: {
@@ -223,6 +238,7 @@ export interface ServerWithAllComponents extends Server {
   memory: ServerMemoryDetail[];
   disks: ServerDiskDetail[];
   network_interfaces: ServerNetworkDetail[];
+  gpus: ServerGpuDetail[];
   bmc_interfaces: ServerBMCDetail[];
   credentials: ServerCredential[];
   motherboard_detail?: ServerMotherboardDetail;

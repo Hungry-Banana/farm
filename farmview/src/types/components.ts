@@ -60,6 +60,21 @@ export interface ComponentGpuType {
   created_at?: string;
 }
 
+export interface ComponentBmcType {
+  component_bmc_id: number;
+  vendor: string;
+  model: string;
+  firmware_version?: string;
+  supports_ipmi?: boolean;
+  supports_redfish?: boolean;
+  supports_web_interface?: boolean;
+  supports_kvm?: boolean;
+  supports_virtual_media?: boolean;
+  has_dedicated_port?: boolean;
+  max_speed_mbps?: number;
+  created_at?: string;
+}
+
 export interface ComponentCatalog {
   cpus: ComponentCpuType[];
   memory: ComponentMemoryType[];
@@ -67,6 +82,7 @@ export interface ComponentCatalog {
   network_interfaces: ComponentNetworkType[];
   gpus: ComponentGpuType[];
   motherboards: ComponentMotherboardType[];
+  bmcs: ComponentBmcType[];
 }
 
 export interface ComponentCatalogStats {
@@ -76,4 +92,5 @@ export interface ComponentCatalogStats {
   total_network_types: number;
   total_gpu_types: number;
   total_motherboard_types: number;
+  total_bmc_types: number;
 }

@@ -4,7 +4,7 @@ import {
   ServerCpuUI,
   ServerMemoryUI,
   ServerDiskUI,
-  ServerNetworkDetail 
+  ServerNetworkUI 
 } from '@/types/server';
 
 /**
@@ -57,32 +57,33 @@ export function convertServerToInventory(serverData: ServerWithAllComponents): S
     })),
 
     // Convert Network Interfaces
-    nics: serverData.network_interfaces.map((nic): ServerNetworkDetail => ({
+    nics: serverData.network_interfaces.map((nic): ServerNetworkUI => ({
       interface_id: nic.interface_id,
       name: nic.name,
       mac_address: nic.mac_address,
       ip_address: nic.ip_address,
-      mtu: nic.mtu,
-      speed_mbps: nic.speed_mbps,
-      firmware_version: nic.firmware_version,
-      pci_address: nic.pci_address,
-      is_primary: nic.is_primary,
-      bond_group: nic.bond_group,
-      bond_master: nic.bond_master,
-      switch_port_id: nic.switch_port_id,
       interface_type: nic.interface_type,
-      firmware_version_bmc: nic.firmware_version_bmc,
-      release_date: nic.release_date,
-      switch_name: nic.switch_name,
-      switch_port_name: nic.switch_port_name,
+      speed_mbps: nic.speed_mbps,
+      pci_address: nic.pci_address,
       manufacturer: nic.manufacturer,
       model: nic.model,
-      max_speed_mbps: nic.max_speed_mbps,
-      num_ports: nic.num_ports,
+      firmware_version: nic.firmware_version,
+      is_primary: nic.is_primary ? 'Yes' : 'No',
+      switch_name: nic.switch_name,
+      switch_port_name: nic.switch_port_name,
+      switch_id: nic.switch_id,
     })),
 
-    // GPUs - placeholder since backend doesn't have GPU data yet
-    gpus: [],
+    // Convert GPUs
+    gpus: serverData.gpus.map((gpu) => ({
+      gpu_id: gpu.gpu_id,
+      pci_address: gpu.pci_address,
+      driver_version: gpu.driver_version,
+      uuid: gpu.uuid,
+      vendor: gpu.vendor,
+      model: gpu.model,
+      vram_mb: gpu.vram_mb,
+    })),
 
     // Motherboard info from motherboard detail with BMC firmware
     motherboard: {
