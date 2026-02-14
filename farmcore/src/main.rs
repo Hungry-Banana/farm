@@ -4,6 +4,7 @@ mod api;
 mod search;
 mod repositories;
 mod state;
+mod domain;
 
 use actix_web::{web, App, HttpServer, HttpResponse, Result};
 use database::DbPool;

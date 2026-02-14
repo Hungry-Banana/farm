@@ -1,10 +1,74 @@
-use actix_web::{get, put, web, HttpResponse, Responder};
+use actix_web::{get, post, put, web, HttpResponse, Responder};
 use std::collections::HashMap;
 
 use crate::api::responses::ApiResponse;
 use crate::api::documentation::*;
 use crate::api::query_parser::CommonPaginationQuery;
 use crate::state::AppState;
+use crate::domain::bmc::RedfishClient;
+
+/// Helper function to get BMC client for a server
+async fn get_bmc_client(
+    app_state: &AppState,
+    server_id: i32,
+) -> Result<RedfishClient, HttpResponse> {
+    let bmc_interfaces = match app_state.server_repo().get_server_bmc_interfaces(server_id).await {
+        Ok(bmcs) => bmcs,
+        Err(e) => {
+            let response = ApiResponse::<()>::error(
+                "DATABASE_ERROR",
+                &format!("Failed to get BMC info: {}", e)
+            );
+            return Err(HttpResponse::InternalServerError().json(response));
+        }
+    };
+
+    let bmc_interface = match bmc_interfaces.first() {
+        Some(bmc) => bmc,
+        None => {
+            let response = ApiResponse::<()>::error(
+                "BMC_ERROR",
+                &format!("No BMC interface found for server {}", server_id)
+            );
+            return Err(HttpResponse::NotFound().json(response));
+        }
+    };
+
+    let ip = match &bmc_interface.ip_address {
+        Some(ip) => ip,
+        None => {
+            let response = ApiResponse::<()>::error("BMC_ERROR", "BMC IP address not configured");
+            return Err(HttpResponse::InternalServerError().json(response));
+        }
+    };
+
+    let username = match &bmc_interface.username {
+        Some(u) => u,
+        None => {
+            let response = ApiResponse::<()>::error("BMC_ERROR", "BMC username not configured");
+            return Err(HttpResponse::InternalServerError().json(response));
+        }
+    };
+
+    let password = match &bmc_interface.password {
+        Some(p) => p,
+        None => {
+            let response = ApiResponse::<()>::error("BMC_ERROR", "BMC password not configured");
+            return Err(HttpResponse::InternalServerError().json(response));
+        }
+    };
+
+    match RedfishClient::new(ip, username, password) {
+        Ok(client) => Ok(client),
+        Err(e) => {
+            let response = ApiResponse::<()>::error(
+                "BMC_ERROR",
+                &format!("Failed to create BMC client: {}", e)
+            );
+            Err(HttpResponse::InternalServerError().json(response))
+        }
+    }
+}
 
 #[get("")]
 pub async fn index() -> impl Responder {
@@ -53,6 +117,48 @@ pub async fn index() -> impl Responder {
             .add_response_code(ResponseCodeDoc::new(200, "Success - Server created or updated"))
             .add_response_code(ResponseCodeDoc::new(400, "Invalid inventory data"))
             .add_response_code(ResponseCodeDoc::new(500, "Database error"))
+    )
+    .add_endpoint(
+        EndpointDoc::new("/api/v1/servers/{id}/power/on", HttpMethod::Post, "Power on a server via BMC")
+            .add_path_parameter(ParameterDoc::new("id", ParameterType::Integer, "Server ID", true))
+            .add_response_code(ResponseCodeDoc::new(200, "Success - Server powered on"))
+            .add_response_code(ResponseCodeDoc::new(404, "Server not found"))
+            .add_response_code(ResponseCodeDoc::new(500, "BMC operation failed"))
+    )
+    .add_endpoint(
+        EndpointDoc::new("/api/v1/servers/{id}/power/off", HttpMethod::Post, "Power off a server via BMC (graceful)")
+            .add_path_parameter(ParameterDoc::new("id", ParameterType::Integer, "Server ID", true))
+            .add_response_code(ResponseCodeDoc::new(200, "Success - Server powered off"))
+            .add_response_code(ResponseCodeDoc::new(404, "Server not found"))
+            .add_response_code(ResponseCodeDoc::new(500, "BMC operation failed"))
+    )
+    .add_endpoint(
+        EndpointDoc::new("/api/v1/servers/{id}/power/restart", HttpMethod::Post, "Restart a server via BMC (graceful)")
+            .add_path_parameter(ParameterDoc::new("id", ParameterType::Integer, "Server ID", true))
+            .add_response_code(ResponseCodeDoc::new(200, "Success - Server restarting"))
+            .add_response_code(ResponseCodeDoc::new(404, "Server not found"))
+            .add_response_code(ResponseCodeDoc::new(500, "BMC operation failed"))
+    )
+    .add_endpoint(
+        EndpointDoc::new("/api/v1/servers/{id}/power/force-off", HttpMethod::Post, "Force power off a server via BMC")
+            .add_path_parameter(ParameterDoc::new("id", ParameterType::Integer, "Server ID", true))
+            .add_response_code(ResponseCodeDoc::new(200, "Success - Server force powered off"))
+            .add_response_code(ResponseCodeDoc::new(404, "Server not found"))
+            .add_response_code(ResponseCodeDoc::new(500, "BMC operation failed"))
+    )
+    .add_endpoint(
+        EndpointDoc::new("/api/v1/servers/{id}/power/force-restart", HttpMethod::Post, "Force restart a server via BMC")
+            .add_path_parameter(ParameterDoc::new("id", ParameterType::Integer, "Server ID", true))
+            .add_response_code(ResponseCodeDoc::new(200, "Success - Server force restarting"))
+            .add_response_code(ResponseCodeDoc::new(404, "Server not found"))
+            .add_response_code(ResponseCodeDoc::new(500, "BMC operation failed"))
+    )
+    .add_endpoint(
+        EndpointDoc::new("/api/v1/servers/{id}/power/status", HttpMethod::Get, "Get server power state via BMC")
+            .add_path_parameter(ParameterDoc::new("id", ParameterType::Integer, "Server ID", true))
+            .add_response_code(ResponseCodeDoc::new(200, "Success - Returns power state"))
+            .add_response_code(ResponseCodeDoc::new(404, "Server not found"))
+            .add_response_code(ResponseCodeDoc::new(500, "BMC operation failed"))
     );
 
     let response = ApiResponse::success(documentation);
@@ -223,14 +329,182 @@ pub async fn upsert_server_inventory(
     }
 }
 
+#[post("/{id}/power/on")]
+pub async fn power_on_server(
+    app_state: web::Data<AppState>,
+    id: web::Path<i64>,
+) -> impl Responder {
+    let server_id = id.into_inner() as i32;
+    
+    let client: RedfishClient = match get_bmc_client(&app_state, server_id).await {
+        Ok(c) => c,
+        Err(response) => return response,
+    };
+
+    match client.power_on(None).await {
+        Ok(_) => {
+            let response = ApiResponse::success(serde_json::json!({
+                "message": "Server power on command sent",
+                "server_id": server_id
+            }));
+            HttpResponse::Ok().json(response)
+        },
+        Err(e) => {
+            let response = ApiResponse::<()>::error("BMC_ERROR", &format!("Power on failed: {}", e));
+            HttpResponse::InternalServerError().json(response)
+        }
+    }
+}
+
+#[post("/{id}/power/off")]
+pub async fn power_off_server(
+    app_state: web::Data<AppState>,
+    id: web::Path<i64>,
+) -> impl Responder {
+    let server_id = id.into_inner() as i32;
+    
+    let client: RedfishClient = match get_bmc_client(&app_state, server_id).await {
+        Ok(c) => c,
+        Err(response) => return response,
+    };
+
+    match client.power_off(None).await {
+        Ok(_) => {
+            let response = ApiResponse::success(serde_json::json!({
+                "message": "Server graceful shutdown command sent",
+                "server_id": server_id
+            }));
+            HttpResponse::Ok().json(response)
+        },
+        Err(e) => {
+            let response = ApiResponse::<()>::error("BMC_ERROR", &format!("Power off failed: {}", e));
+            HttpResponse::InternalServerError().json(response)
+        }
+    }
+}
+
+#[post("/{id}/power/restart")]
+pub async fn restart_server(
+    app_state: web::Data<AppState>,
+    id: web::Path<i64>,
+) -> impl Responder {
+    let server_id = id.into_inner() as i32;
+    
+    let client: RedfishClient = match get_bmc_client(&app_state, server_id).await {
+        Ok(c) => c,
+        Err(response) => return response,
+    };
+
+    match client.reboot(None).await {
+        Ok(_) => {
+            let response = ApiResponse::success(serde_json::json!({
+                "message": "Server graceful restart command sent",
+                "server_id": server_id
+            }));
+            HttpResponse::Ok().json(response)
+        },
+        Err(e) => {
+            let response = ApiResponse::<()>::error("BMC_ERROR", &format!("Restart failed: {}", e));
+            HttpResponse::InternalServerError().json(response)
+        }
+    }
+}
+
+#[post("/{id}/power/force-off")]
+pub async fn force_power_off_server(
+    app_state: web::Data<AppState>,
+    id: web::Path<i64>,
+) -> impl Responder {
+    let server_id = id.into_inner() as i32;
+    
+    let client: RedfishClient = match get_bmc_client(&app_state, server_id).await {
+        Ok(c) => c,
+        Err(response) => return response,
+    };
+
+    match client.force_power_off(None).await {
+        Ok(_) => {
+            let response = ApiResponse::success(serde_json::json!({
+                "message": "Server force power off command sent",
+                "server_id": server_id
+            }));
+            HttpResponse::Ok().json(response)
+        },
+        Err(e) => {
+            let response = ApiResponse::<()>::error("BMC_ERROR", &format!("Force power off failed: {}", e));
+            HttpResponse::InternalServerError().json(response)
+        }
+    }
+}
+
+#[post("/{id}/power/force-restart")]
+pub async fn force_restart_server(
+    app_state: web::Data<AppState>,
+    id: web::Path<i64>,
+) -> impl Responder {
+    let server_id = id.into_inner() as i32;
+    
+    let client: RedfishClient = match get_bmc_client(&app_state, server_id).await {
+        Ok(c) => c,
+        Err(response) => return response,
+    };
+
+    match client.force_reboot(None).await {
+        Ok(_) => {
+            let response = ApiResponse::success(serde_json::json!({
+                "message": "Server force restart command sent",
+                "server_id": server_id
+            }));
+            HttpResponse::Ok().json(response)
+        },
+        Err(e) => {
+            let response = ApiResponse::<()>::error("BMC_ERROR", &format!("Force restart failed: {}", e));
+            HttpResponse::InternalServerError().json(response)
+        }
+    }
+}
+
+#[get("/{id}/power/status")]
+pub async fn get_power_status(
+    app_state: web::Data<AppState>,
+    id: web::Path<i64>,
+) -> impl Responder {
+    let server_id = id.into_inner() as i32;
+    
+    let client: RedfishClient = match get_bmc_client(&app_state, server_id).await {
+        Ok(c) => c,
+        Err(response) => return response,
+    };
+
+    match client.get_power_state(None).await {
+        Ok(power_state) => {
+            let response = ApiResponse::success(serde_json::json!({
+                "server_id": server_id,
+                "power_state": power_state
+            }));
+            HttpResponse::Ok().json(response)
+        },
+        Err(e) => {
+            let response = ApiResponse::<()>::error("BMC_ERROR", &format!("Failed to get power state: {}", e));
+            HttpResponse::InternalServerError().json(response)
+        }
+    }
+}
+
 pub fn configure_server_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/servers")
             .service(index)
             .service(get_all_servers)
-            .service(get_server_overview)  // Move overview BEFORE the /{id} route
-            .service(upsert_server_inventory)  // POST endpoint for inventory
-            .service(get_server_by_id)     // This goes after more specific routes
-            .service(update_server)        // PUT endpoint for updates
+            .service(get_server_overview)
+            .service(upsert_server_inventory)
+            .service(get_server_by_id)
+            .service(update_server)
+            .service(power_on_server)
+            .service(power_off_server)
+            .service(restart_server)
+            .service(force_power_off_server)
+            .service(force_restart_server)
+            .service(get_power_status)
     );
 }

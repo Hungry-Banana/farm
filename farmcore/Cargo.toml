@@ -39,3 +39,4 @@ k8s-openapi = { version = "0.20", features = ["v1_28"] }
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "cookies"] }
 url = "2.5"
 rust_decimal = { version = "1.35", features = ["serde"] }
+thiserror = "1.0"

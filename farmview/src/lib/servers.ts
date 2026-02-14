@@ -57,4 +57,100 @@ export async function getServersPaginated(
 		"servers"
 	);
 }
+
+// Power management functions
+export async function powerOnServer(server_id: number) {
+	try {
+		const result = await apiRequest(API_ENDPOINTS.SERVERS.POWER.ON(server_id), {
+			method: 'POST',
+			timeout: 30000 // 30 seconds for BMC operations
+		});
+		return result;
+	} catch (error) {
+		console.error("Failed to power on server:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Failed to power on server'
+		};
+	}
+}
+
+export async function powerOffServer(server_id: number) {
+	try {
+		const result = await apiRequest(API_ENDPOINTS.SERVERS.POWER.OFF(server_id), {
+			method: 'POST',
+			timeout: 30000 // 30 seconds for BMC operations
+		});
+		return result;
+	} catch (error) {
+		console.error("Failed to power off server:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Failed to power off server'
+		};
+	}
+}
+
+export async function restartServer(server_id: number) {
+	try {
+		const result = await apiRequest(API_ENDPOINTS.SERVERS.POWER.RESTART(server_id), {
+			method: 'POST',
+			timeout: 30000 // 30 seconds for BMC operations
+		});
+		return result;
+	} catch (error) {
+		console.error("Failed to restart server:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Failed to restart server'
+		};
+	}
+}
+
+export async function forcePowerOffServer(server_id: number) {
+	try {
+		const result = await apiRequest(API_ENDPOINTS.SERVERS.POWER.FORCE_OFF(server_id), {
+			method: 'POST',
+			timeout: 30000 // 30 seconds for BMC operations
+		});
+		return result;
+	} catch (error) {
+		console.error("Failed to force power off server:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Failed to force power off server'
+		};
+	}
+}
+
+export async function forceRestartServer(server_id: number) {
+	try {
+		const result = await apiRequest(API_ENDPOINTS.SERVERS.POWER.FORCE_RESTART(server_id), {
+			method: 'POST',
+			timeout: 30000 // 30 seconds for BMC operations
+		});
+		return result;
+	} catch (error) {
+		console.error("Failed to force restart server:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Failed to force restart server'
+		};
+	}
+}
+
+export async function getServerPowerStatus(server_id: number) {
+	try {
+		const result = await apiRequest(API_ENDPOINTS.SERVERS.POWER.STATUS(server_id), {
+			timeout: 30000 // 30 seconds for BMC operations
+		});
+		return result?.data || null;
+	} catch (error) {
+		console.error("Failed to get server power status:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Failed to get server power status'
+		};
+	}
+}
   

@@ -7,3 +7,4 @@ pub mod api;
 pub mod repositories;
 pub mod state;
 pub mod search;
+pub mod domain;

@@ -59,12 +59,23 @@ export async function apiRequest(
     if (!response.ok) {
       // Try to get error details from response
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      let detailedError = '';
+      
       try {
         const errorData = await response.json();
+        // Try to extract error message from various response formats
         if (errorData.error) {
-          errorMessage += ` - ${errorData.error}`;
+          detailedError = errorData.error;
         } else if (errorData.message) {
-          errorMessage += ` - ${errorData.message}`;
+          detailedError = errorData.message;
+        } else if (errorData.data?.message) {
+          detailedError = errorData.data.message;
+        } else if (errorData.data?.error) {
+          detailedError = errorData.data.error;
+        }
+        
+        if (detailedError) {
+          errorMessage = detailedError;
         }
       } catch (e) {
         // If we can't parse the error response, use the original message
@@ -220,6 +231,14 @@ export const API_ENDPOINTS = {
     CREATE: '/api/servers',
     UPDATE: (id: number) => `/api/servers/${id}`,
     DELETE: (id: number) => `/api/servers/${id}`,
+    POWER: {
+      ON: (id: number) => `/api/servers/${id}/power/on`,
+      OFF: (id: number) => `/api/servers/${id}/power/off`,
+      RESTART: (id: number) => `/api/servers/${id}/power/restart`,
+      FORCE_OFF: (id: number) => `/api/servers/${id}/power/force-off`,
+      FORCE_RESTART: (id: number) => `/api/servers/${id}/power/force-restart`,
+      STATUS: (id: number) => `/api/servers/${id}/power/status`,
+    },
   },
   
   // Component endpoints

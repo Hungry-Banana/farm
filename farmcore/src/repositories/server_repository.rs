@@ -362,7 +362,7 @@ impl ServerRepository {
             .await
     }
 
-    async fn get_server_bmc_interfaces(&self, server_id: i32) -> Result<Vec<ServerBmcDetail>, sqlx::Error> {
+    pub async fn get_server_bmc_interfaces(&self, server_id: i32) -> Result<Vec<ServerBmcDetail>, sqlx::Error> {
         let query = r#"
             SELECT 
                 sbi.bmc_interface_id,
