@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import DBTableSection from "@/components/ui/table/DBTableSection";
+import VMCellContent from "@/components/ui/table/VMCellContent";
 import { getVMs } from "@/lib/vms";
 
 export default function VMManagementPage() {
@@ -97,6 +98,7 @@ export default function VMManagementPage() {
                         data={vms}
                         searchPlaceholder="Search virtual machines..."
                         keyField="vm_id"
+                        cellContentRenderer={VMCellContent}
                     />
                 )}
             </div>

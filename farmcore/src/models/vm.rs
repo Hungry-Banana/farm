@@ -67,22 +67,24 @@ pub struct VmDisk {
 // VM Network Interface details
 #[derive(FromRow, Debug, Clone, Serialize, Deserialize)]
 pub struct VmNetworkInterface {
-    pub vm_nic_id: i32,
+    pub vm_interface_id: i32,
     pub vm_id: i32,
-    pub nic_name: String,
+    pub interface_name: String,
+    pub interface_uuid: Option<String>,
+    pub description: Option<String>,
     pub mac_address: Option<String>,
-    pub network_type: Option<String>, // ENUM: 'bridge', 'nat', 'host', 'macvtap', 'ovs', 'direct', 'isolated'
-    pub bridge_name: Option<String>,
-    pub network_name: Option<String>,
-    pub model: Option<String>, // ENUM: 'virtio', 'e1000', 'rtl8139', 'vmxnet3'
-    pub mtu: Option<i32>,
-    pub vlan_id: Option<i32>,
-    pub link_state: Option<String>, // ENUM: 'up', 'down'
-    pub bandwidth_limit_mbps: Option<i32>,
     pub ip_address: Option<String>,
     pub netmask: Option<String>,
     pub gateway: Option<String>,
-    pub dns_servers: Option<String>,
+    pub interface_type: Option<String>, // ENUM: 'bridge', 'nat', 'host-only', 'internal', 'external'
+    pub network_bridge: Option<String>,
+    pub vlan_id: Option<i32>,
+    pub driver_type: Option<String>, // ENUM: 'virtio', 'e1000', 'e1000e', 'rtl8139', 'vmxnet3'
+    pub link_state: Option<String>, // ENUM: 'up', 'down'
+    pub bandwidth_limit_mbps: Option<i32>,
+    pub packet_filter_enabled: Option<bool>,
+    pub is_connected: Option<bool>,
+    pub is_primary: Option<bool>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }

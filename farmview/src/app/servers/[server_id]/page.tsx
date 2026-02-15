@@ -187,7 +187,12 @@ const VMsInventory = ({ serverId }: { serverId: number }) => {
             label: 'VM Name',
             render: (value, vm) => (
               <div>
-                <p className="font-medium text-foreground">{value || `VM ${vm.vm_id}`}</p>
+                <a 
+                  href={`/servers/vms/${vm.vm_id}`}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {value || `VM ${vm.vm_id}`}
+                </a>
                 <p className="text-sm text-muted-foreground">ID: {vm.vm_id}</p>
               </div>
             )

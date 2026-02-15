@@ -93,7 +93,7 @@ impl VmRepository {
     /// Get all disks for a VM
     pub async fn get_vm_disks(&self, vm_id: i32) -> Result<Vec<VmDisk>, sqlx::Error> {
         let disks: Vec<VmDisk> = sqlx::query_as(
-            "SELECT * FROM vm_disks WHERE vm_id = ? ORDER BY boot_order, disk_name"
+            "SELECT * FROM vm_disks WHERE vm_id = ? "
         )
         .bind(vm_id)
         .fetch_all(&self.pool)
@@ -105,7 +105,7 @@ impl VmRepository {
     /// Get all network interfaces for a VM
     pub async fn get_vm_network_interfaces(&self, vm_id: i32) -> Result<Vec<VmNetworkInterface>, sqlx::Error> {
         let interfaces: Vec<VmNetworkInterface> = sqlx::query_as(
-            "SELECT * FROM vm_network_interfaces WHERE vm_id = ? ORDER BY nic_name"
+            "SELECT * FROM vm_network_interfaces WHERE vm_id = ?"
         )
         .bind(vm_id)
         .fetch_all(&self.pool)
