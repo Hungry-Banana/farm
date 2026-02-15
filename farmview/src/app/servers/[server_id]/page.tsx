@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { DefaultServerIcon } from "@/assets/icons";
 import { getServerById } from "@/lib/servers";
+import { getVMsByServer } from "@/lib/vms";
 import { ServerCpuUI, ServerDiskUI, ServerGpuDetail, ServerInventory, ServerMemoryUI, ServerNetworkUI, ServerWithAllComponents } from "@/types/server";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import FieldSection from "@/components/ui/FieldSection";
@@ -140,6 +141,96 @@ const NICInventory = ({ nics }: { nics: ServerNetworkUI[] }) => {
 			/>
 		</div>
     );
+};
+
+const VMsInventory = ({ serverId }: { serverId: number }) => {
+  const [vms, setVMs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadVMs() {
+      try {
+        const data = await getVMsByServer(serverId);
+        setVMs(data || []);
+      } catch (error) {
+        console.error('Failed to load VMs:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadVMs();
+  }, [serverId]);
+
+  if (loading) {
+    return (
+      <div className="p-5 text-center">
+        <div className="text-muted-foreground">Loading virtual machines...</div>
+      </div>
+    );
+  }
+
+  if (vms.length === 0) {
+    return (
+      <div className="p-5 text-center">
+        <div className="text-muted-foreground">No virtual machines found on this server</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5">
+      <TableSection
+        columns={[
+          {
+            key: 'vm_name',
+            label: 'VM Name',
+            render: (value, vm) => (
+              <div>
+                <p className="font-medium text-foreground">{value || `VM ${vm.vm_id}`}</p>
+                <p className="text-sm text-muted-foreground">ID: {vm.vm_id}</p>
+              </div>
+            )
+          },
+          { key: 'hypervisor_type', label: 'Hypervisor' },
+          {
+            key: 'vm_state',
+            label: 'State',
+            render: (value) => {
+              const stateColors: Record<string, string> = {
+                running: 'text-green-500 bg-green-500/10 border-green-500/20',
+                stopped: 'text-red-500 bg-red-500/10 border-red-500/20',
+                paused: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20',
+                suspended: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+                unknown: 'text-gray-500 bg-gray-500/10 border-gray-500/20'
+              };
+              const colorClass = stateColors[value?.toLowerCase()] || stateColors.unknown;
+              return (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-theme text-xs font-medium border ${colorClass}`}>
+                  {value || 'unknown'}
+                </span>
+              );
+            }
+          },
+          { key: 'guest_os_family', label: 'OS Family' },
+          { key: 'vcpu_count', label: 'vCPUs' },
+          {
+            key: 'memory_mb',
+            label: 'Memory',
+            render: (value) => `${Math.round((value || 0) / 1024)} GB`
+          },
+          {
+            key: 'storage_gb',
+            label: 'Storage',
+            render: (value) => `${Math.round(value || 0)} GB`
+          }
+        ]}
+        data={vms}
+        keyField="vm_id"
+        searchable={false}
+      />
+    </div>
+  );
 };
 
 const MotherboardInventory = ({ motherboard }: { motherboard: any }) => {
@@ -468,6 +559,7 @@ export default function ServerPage() {
 								gpus: <GPUInventory gpus={inventory.gpus} />,
 								nics: <NICInventory nics={inventory.nics} />,
 								motherboard: <MotherboardInventory motherboard={inventory.motherboard} />,
+								vms: <VMsInventory serverId={serverId} />,
 								monitoring: <MonitorTab />,
 							}}
 					  	/>

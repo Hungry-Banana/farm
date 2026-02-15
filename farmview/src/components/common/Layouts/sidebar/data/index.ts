@@ -41,11 +41,11 @@ export const NAV_DATA = [
             items: [
               {
                 title: "Overview",
-                url: "/servers/vms",
+                url: "/servers/vms/overview",
               },
               {
                 title: "VM Management",
-                url: "/servers/vms/management",
+                url: "/servers/vms",
               },
             ],
           },

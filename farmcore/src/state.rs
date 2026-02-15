@@ -1,5 +1,5 @@
 use sqlx::MySqlPool;
-use crate::repositories::{ServerRepository, ComponentRepository};
+use crate::repositories::{ServerRepository, ComponentRepository, VmRepository};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -17,6 +17,10 @@ impl AppState {
 
     pub fn component_repo(&self) -> ComponentRepository {
         ComponentRepository::new(self.pool.clone())
+    }
+
+    pub fn vm_repo(&self) -> VmRepository {
+        VmRepository::new(self.pool.clone())
     }
 
     // Method to get the pool directly for cases where we need it
