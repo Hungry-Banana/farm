@@ -193,7 +193,6 @@ const VMsInventory = ({ serverId }: { serverId: number }) => {
                 >
                   {value || `VM ${vm.vm_id}`}
                 </a>
-                <p className="text-sm text-muted-foreground">ID: {vm.vm_id}</p>
               </div>
             )
           },
@@ -404,7 +403,7 @@ export default function ServerPage() {
                         {/* Left Column: Server Information */}
                         <div className="space-y-6">
                             <div className=" rounded-theme bg-accent/10 hover:bg-accent/20 transition-colors">
-                                <div className="space-y-4 text-sm text-foreground font-mono">
+                                <div className="space-y-5 text-sm text-foreground font-mono">
                                     {/* Basic Information Section */}
                                     <FieldSection fields={[
                                         { label: 'Server ID', value: server.server_id, icon: '' },
@@ -454,9 +453,6 @@ export default function ServerPage() {
                                         { label: 'Switch', value: primaryNic?.switch_name || 'N/A', icon: '' },
                                         { label: 'Port', value: primaryNic?.switch_port_name || 'N/A', icon: '' }
                                     ]} />
-
-                                    {/* Separator Line */}
-                                    <div className="border-t border-island_border my-3"></div>
 
                                     {/* BMC Network Interface Section */}
                                     <FieldSection fields={[
