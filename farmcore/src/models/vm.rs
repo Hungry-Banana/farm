@@ -54,12 +54,15 @@ pub struct VmDisk {
     pub disk_path: Option<String>,
     pub storage_pool: Option<String>,
     pub storage_type: Option<String>, // ENUM: 'file', 'block', 'lvm', 'iscsi', 'ceph', 'rbd', 'nfs', 'zfs', 'glusterfs'
-    pub cache_mode: Option<String>, // ENUM: 'none', 'writethrough', 'writeback', 'directsync', 'unsafe'
-    pub io_mode: Option<String>, // ENUM: 'native', 'threads', 'io_uring'
     pub is_bootable: Option<bool>,
-    pub boot_order: Option<i32>,
-    pub read_only: Option<bool>,
-    pub shareable: Option<bool>,
+    pub is_system_disk: Option<bool>,
+    pub disk_bus: Option<String>,
+    pub disk_device: Option<String>,
+    pub cache_mode: Option<String>, // ENUM: 'none', 'writethrough', 'writeback', 'directsync', 'unsafe'
+    pub io_mode: Option<String>, // ENUM: 'native', 'threads'
+    pub discard_mode: Option<String>, // ENUM: 'ignore', 'unmap'
+    pub snapshot_enabled: Option<bool>,
+    pub backup_enabled: Option<bool>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }

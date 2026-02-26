@@ -1,4 +1,4 @@
-use actix_web::{get, put, web, HttpResponse, Responder};
+use actix_web::{get, post, put, web, HttpResponse, Responder};
 use std::collections::HashMap;
 
 use crate::api::responses::ApiResponse;
@@ -50,6 +50,13 @@ pub async fn index() -> impl Responder {
             .add_response_code(ResponseCodeDoc::new(200, "Success - VM updated"))
             .add_response_code(ResponseCodeDoc::new(400, "Invalid field or value"))
             .add_response_code(ResponseCodeDoc::new(404, "VM not found"))
+    )
+    .add_endpoint(
+        EndpointDoc::new("/api/v1/vms/inventory", HttpMethod::Post, "Create or update VMs from inventory data. Server is identified by host MAC address.")
+            .add_example(ExampleDoc::new("Post VM inventory", "/api/v1/vms/inventory"))
+            .add_response_code(ResponseCodeDoc::new(200, "Success - VMs created or updated"))
+            .add_response_code(ResponseCodeDoc::new(400, "Invalid inventory data or server not found"))
+            .add_response_code(ResponseCodeDoc::new(500, "Database error"))
     );
 
     let response = ApiResponse::success(documentation);
@@ -204,6 +211,47 @@ pub async fn update_vm(
     }
 }
 
+#[post("/inventory")]
+pub async fn upsert_vm_inventory(
+    app_state: web::Data<AppState>,
+    inventory: web::Json<crate::repositories::vm_repository::VmInventory>
+) -> impl Responder {
+    log::info!("Received VM inventory for host MAC: {}, VMs count: {}", 
+        inventory.host_mac_address, inventory.vms.len());
+    
+    match app_state.vm_repo().upsert_vm_from_inventory(inventory.into_inner()).await {
+        Ok(results) => {
+            let created_count = results.iter().filter(|(_, was_created)| *was_created).count();
+            let updated_count = results.len() - created_count;
+            let vm_ids: Vec<i32> = results.iter().map(|(id, _)| *id).collect();
+            
+            log::info!("VM inventory processed: {} created, {} updated", created_count, updated_count);
+            
+            let response = ApiResponse::success(serde_json::json!({
+                "message": "VM inventory processed successfully",
+                "created": created_count,
+                "updated": updated_count,
+                "vm_ids": vm_ids
+            }));
+            HttpResponse::Ok().json(response)
+        },
+        Err(e) => {
+            log::error!("Error upserting VMs from inventory: {}", e);
+            
+            let error_message = e.to_string();
+            let (mut status_code, error_code) = if error_message.contains("server_id") 
+                || error_message.contains("does not exist") {
+                (HttpResponse::BadRequest(), "VALIDATION_ERROR")
+            } else {
+                (HttpResponse::InternalServerError(), "DATABASE_ERROR")
+            };
+
+            let response = ApiResponse::<()>::error(error_code, &error_message);
+            status_code.json(response)
+        }
+    }
+}
+
 pub fn configure_vm_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/vms")
@@ -213,5 +261,6 @@ pub fn configure_vm_routes(cfg: &mut web::ServiceConfig) {
             .service(get_vms_by_server_id)
             .service(get_vm_by_id)
             .service(update_vm)
+            .service(upsert_vm_inventory)
     );
 }

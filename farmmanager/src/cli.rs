@@ -198,6 +198,17 @@ pub enum VmCommands {
         #[arg(short, long)]
         force: bool,
     },
+    
+    /// Post VM inventory data to FarmCore API
+    PostInventory {
+        /// FarmCore API base URL
+        #[arg(short, long, default_value = "http://localhost:6183")]
+        url: String,
+        
+        /// Hypervisor type (kvm, qemu, vmware, virtualbox)
+        #[arg(short = 'H', long, default_value = "kvm")]
+        hypervisor: String,
+    },
 }
 
 #[derive(Subcommand)]
