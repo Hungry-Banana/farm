@@ -235,12 +235,12 @@ export default function VMPage() {
     };
 
     const stateConfig: { [key: string]: { color: string; bg: string; border: string; icon: string } } = {
-        'running': { color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20', icon: '▶' },
-        'stopped': { color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: '■' },
-        'paused': { color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: '⏸' },
-        'suspended': { color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: '⏯' },
-        'unknown': { color: 'text-gray-500', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: '?' },
-        'DEFAULT': { color: 'text-gray-500', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: '?' }
+        'running': { color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20', icon: '' },
+        'stopped': { color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: '' },
+        'paused': { color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: '' },
+        'suspended': { color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: '' },
+        'unknown': { color: 'text-gray-500', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: '' },
+        'DEFAULT': { color: 'text-gray-500', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: '' }
     };
 
     if (loading) {
@@ -319,7 +319,7 @@ export default function VMPage() {
                     </div>
 
                     {/* VM Overview */}
-                    <div className="p-5">
+                    <div>
                         <div className="grid grid-cols-2 gap-5">
                             {/* Left Column: VM Information */}
                             <div className="space-y-6">
