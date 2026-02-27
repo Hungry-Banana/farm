@@ -17,3 +17,4 @@ clap = { version = "4.4", features = ["derive"] }
 serde_yaml = "0.9"
 dirs = "5.0"
 reqwest = { version = "0.11", features = ["json", "blocking"] }
+nvml-wrapper = "0.12.0"

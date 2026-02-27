@@ -15,6 +15,10 @@ pub enum Commands {
     #[command(subcommand)]
     Hardware(HardwareCommands),
     
+    /// Testing and diagnostics commands (GPU, NCCL, MPI)
+    #[command(subcommand)]
+    Test(TestCommands),
+    
     /// Virtual machine management commands
     #[command(subcommand)]
     Vm(VmCommands),
@@ -73,6 +77,142 @@ pub enum HardwareCommands {
         /// FarmCore API base URL
         #[arg(short, long, default_value = "http://localhost:6183")]
         url: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum TestCommands {
+    /// Check for GPU errors (NVIDIA GPUs only, requires NVML)
+    GpuErrors {
+        /// Output format (json, yaml, or pretty)
+        #[arg(short, long, default_value = "pretty")]
+        format: String,
+    },
+    /// Check GPU health status (NVIDIA GPUs only, requires NVML)
+    GpuHealth {
+        /// Output format (json, yaml, or pretty)
+        #[arg(short, long, default_value = "pretty")]
+        format: String,
+    },
+    /// Test NCCL (NVIDIA Collective Communications Library) functionality
+    NcclTest {
+        /// Test type: all-reduce, broadcast, reduce-scatter, all-gather, bandwidth
+        #[arg(short, long, default_value = "all-reduce")]
+        test_type: String,
+        
+        /// Data size in bytes (supports K, M, G suffixes)
+        #[arg(short, long, default_value = "32M")]
+        size: String,
+        
+        /// Number of iterations
+        #[arg(short, long, default_value = "20")]
+        iterations: u32,
+        
+        /// Output format (json, yaml, or pretty)
+        #[arg(short = 'f', long, default_value = "pretty")]
+        format: String,
+    },
+    /// Check NCCL installation and version
+    NcclInfo {
+        /// Output format (json, yaml, or pretty)
+        #[arg(short, long, default_value = "pretty")]
+        format: String,
+    },
+    /// Test MPI (Message Passing Interface) functionality
+    MpiTest {
+        /// Test type: ping-pong, all-reduce, broadcast, barrier, bandwidth, latency
+        #[arg(short, long, default_value = "ping-pong")]
+        test_type: String,
+        
+        /// Number of processes to spawn
+        #[arg(short = 'n', long, default_value = "4")]
+        processes: u32,
+        
+        /// Data size in bytes (supports K, M, G suffixes)
+        #[arg(short, long, default_value = "1M")]
+        size: String,
+        
+        /// Number of iterations
+        #[arg(short, long, default_value = "100")]
+        iterations: u32,
+        
+        /// Output format (json, yaml, or pretty)
+        #[arg(short = 'f', long, default_value = "pretty")]
+        format: String,
+    },
+    /// Check MPI installation and version
+    MpiInfo {
+        /// Output format (json, yaml, or pretty)
+        #[arg(short, long, default_value = "pretty")]
+        format: String,
+    },
+    /// Test Hashcat password cracking/hashing functionality
+    HashcatBenchmark {
+        /// Hash types to benchmark (e.g., 0 for MD5, 1000 for NTLM, 1400 for SHA256)
+        #[arg(short = 'm', long, value_delimiter = ',', default_value = "0,100,1000")]
+        hash_types: Vec<String>,
+        
+        /// Device IDs to use (comma-separated, e.g., "1,2")
+        #[arg(short, long, value_delimiter = ',')]
+        devices: Option<Vec<u32>>,
+        
+        /// Output format (json, yaml, or pretty)
+        #[arg(short = 'f', long, default_value = "pretty")]
+        format: String,
+    },
+    /// Run hashcat dictionary attack test
+    HashcatTest {
+        /// Hash type mode (e.g., 0 for MD5, 1000 for NTLM, 1400 for SHA256)
+        #[arg(short = 'm', long, default_value = "0")]
+        hash_type: String,
+        
+        /// Path to file containing hashes
+        #[arg(short = 'H', long)]
+        hash_file: String,
+        
+        /// Path to wordlist file
+        #[arg(short, long)]
+        wordlist: String,
+        
+        /// Device IDs to use (comma-separated, e.g., "1,2")
+        #[arg(short, long, value_delimiter = ',')]
+        devices: Option<Vec<u32>>,
+        
+        /// Output format (json, yaml, or pretty)
+        #[arg(short = 'f', long, default_value = "pretty")]
+        format: String,
+    },
+    /// Check Hashcat installation and available devices
+    HashcatInfo {
+        /// Output format (json, yaml, or pretty)
+        #[arg(short, long, default_value = "pretty")]
+        format: String,
+    },
+    /// Run DCGM (Data Center GPU Manager) diagnostics
+    DcgmDiag {
+        /// Diagnostic level: 1=quick, 2=medium, 3=long, 4=extra-long
+        #[arg(short, long, default_value = "1")]
+        level: u32,
+        
+        /// GPU indices to test (comma-separated, e.g., "0,1,2")
+        #[arg(short, long, value_delimiter = ',')]
+        gpus: Option<Vec<u32>>,
+        
+        /// Output format (json, yaml, or pretty)
+        #[arg(short = 'f', long, default_value = "pretty")]
+        format: String,
+    },
+    /// Run DCGM health check on GPUs
+    DcgmHealth {
+        /// Output format (json, yaml, or pretty)
+        #[arg(short, long, default_value = "pretty")]
+        format: String,
+    },
+    /// Check DCGM installation and version
+    DcgmInfo {
+        /// Output format (json, yaml, or pretty)
+        #[arg(short, long, default_value = "pretty")]
+        format: String,
     },
 }
 

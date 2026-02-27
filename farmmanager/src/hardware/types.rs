@@ -158,6 +158,177 @@ pub struct GpuInfo {
 }
 
 #[derive(Debug, Serialize)]
+pub struct GpuErrorInfo {
+    pub device_index: u32,
+    pub device_name: String,
+    pub device_uuid: Option<String>,
+    pub ecc_errors: Option<crate::testing::gpu_errors::EccErrorCounts>,
+    pub retired_pages: Option<u32>,
+    pub xid_errors: Option<String>,
+    pub thermal_violations: Option<String>,
+    pub power_violations: Option<String>,
+    pub has_errors: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct GpuHealthInfo {
+    pub device_index: u32,
+    pub device_name: String,
+    pub device_uuid: Option<String>,
+    pub temperature_celsius: Option<u32>,
+    pub power_usage_watts: Option<u32>,
+    pub power_limit_watts: Option<u32>,
+    pub fan_speed_percent: Option<u32>,
+    pub utilization_gpu_percent: Option<u32>,
+    pub utilization_memory_percent: Option<u32>,
+    pub memory_used_mb: Option<u32>,
+    pub memory_total_mb: Option<u32>,
+    pub clock_graphics_mhz: Option<u32>,
+    pub clock_memory_mhz: Option<u32>,
+    pub throttle_reasons: Vec<String>,
+    pub performance_state: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct NcclInfo {
+    pub nccl_version: Option<String>,
+    pub cuda_version: Option<String>,
+    pub num_gpus: u32,
+    pub nccl_available: bool,
+    pub nccl_tests_available: bool,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct NcclTestResult {
+    pub test_type: String,
+    pub size_bytes: u64,
+    pub iterations: u32,
+    pub num_gpus: u32,
+    pub success: bool,
+    pub time_us: Option<f64>,
+    pub bandwidth_gbps: Option<f64>,
+    pub bus_bandwidth_gbps: Option<f64>,
+    pub error: Option<String>,
+    pub gpu_results: Vec<NcclGpuResult>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct NcclGpuResult {
+    pub device_index: u32,
+    pub device_name: String,
+    pub in_place: bool,
+    pub out_of_place: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MpiInfo {
+    pub mpi_version: Option<String>,
+    pub mpi_implementation: Option<String>,
+    pub mpi_available: bool,
+    pub mpirun_available: bool,
+    pub num_cpus: u32,
+    pub mpi_benchmark_available: bool,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MpiTestResult {
+    pub test_type: String,
+    pub num_processes: u32,
+    pub size_bytes: u64,
+    pub iterations: u32,
+    pub success: bool,
+    pub latency_us: Option<f64>,
+    pub bandwidth_mbps: Option<f64>,
+    pub min_latency_us: Option<f64>,
+    pub max_latency_us: Option<f64>,
+    pub avg_latency_us: Option<f64>,
+    pub error: Option<String>,
+    pub raw_output: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct HashcatInfo {
+    pub hashcat_version: Option<String>,
+    pub hashcat_available: bool,
+    pub opencl_available: bool,
+    pub cuda_available: bool,
+    pub num_devices: u32,
+    pub devices: Vec<HashcatDevice>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct HashcatDevice {
+    pub device_id: u32,
+    pub device_name: String,
+    pub device_type: String, // "GPU", "CPU"
+    pub opencl_version: Option<String>,
+    pub cuda_version: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct HashcatTestResult {
+    pub test_type: String, // "benchmark", "dictionary", "brute-force"
+    pub hash_type: Option<String>, // e.g., "MD5", "SHA256", "bcrypt"
+    pub device_ids: Vec<u32>,
+    pub success: bool,
+    pub hash_speed: Option<f64>, // Hashes per second
+    pub time_seconds: Option<f64>,
+    pub recovered: Option<u32>,
+    pub total: Option<u32>,
+    pub error: Option<String>,
+    pub raw_output: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DcgmInfo {
+    pub dcgm_version: Option<String>,
+    pub dcgm_available: bool,
+    pub dcgmi_available: bool,
+    pub num_gpus: u32,
+    pub driver_version: Option<String>,
+    pub cuda_driver_version: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DcgmDiagResult {
+    pub test_name: String,
+    pub success: bool,
+    pub gpu_results: Vec<DcgmGpuDiagResult>,
+    pub overall_result: String, // "Pass", "Fail", "Warning"
+    pub time_seconds: Option<f64>,
+    pub error: Option<String>,
+    pub raw_output: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DcgmGpuDiagResult {
+    pub device_index: u32,
+    pub device_name: Option<String>,
+    pub result: String, // "Pass", "Fail", "Skip", "Warning"
+    pub info: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DcgmHealthCheck {
+    pub device_index: u32,
+    pub device_name: Option<String>,
+    pub health_status: String, // "Healthy", "Warning", "Failure"
+    pub incidents: Vec<DcgmIncident>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DcgmIncident {
+    pub incident_type: String,
+    pub severity: String, // "Info", "Warning", "Error", "Critical"
+    pub message: String,
+    pub timestamp: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct Timestamps {
     pub collected_at: String,
     pub agent_version: String,
