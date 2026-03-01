@@ -57,11 +57,11 @@ export const NAV_DATA = [
         items: [
           {
             title: "Overview",
-            url: "/kubernetes",
+            url: "/kubernetes/overview",
           },
           {
-            title: "Clusters",
-            url: "/kubernetes/clusters",
+            title: "Cluster Management",
+            url: "/kubernetes",
           },
         ],
       },

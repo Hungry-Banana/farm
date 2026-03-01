@@ -78,6 +78,34 @@ pub enum HardwareCommands {
         #[arg(short, long, default_value = "http://localhost:6183")]
         url: String,
     },
+    /// Get primary disk (smallest, slowest, or lowest numbered)
+    PrimaryDisk {
+        /// Output format (json, yaml, or pretty)
+        #[arg(short, long, default_value = "pretty")]
+        format: String,
+    },
+    /// Create a software RAID array
+    CreateRaid {
+        /// RAID level (0, 1, 5, 6, 10)
+        #[arg(short, long)]
+        level: String,
+        
+        /// Device paths for RAID (e.g., /dev/sdb /dev/sdc)
+        #[arg(short, long, num_args = 2..)]
+        devices: Vec<String>,
+        
+        /// Name for the RAID array (e.g., md0)
+        #[arg(short, long)]
+        name: String,
+        
+        /// Spare devices (optional)
+        #[arg(short, long)]
+        spares: Option<Vec<String>>,
+        
+        /// Skip confirmation prompt
+        #[arg(short = 'y', long)]
+        yes: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -519,5 +547,19 @@ pub enum K8sCommands {
         /// Namespace (not applicable for cluster-scoped resources)
         #[arg(short = 'N', long)]
         namespace: Option<String>,
+    },
+    
+    /// Collect full Kubernetes cluster inventory
+    Inventory {
+        /// Output format (json, yaml, or pretty)
+        #[arg(short, long, default_value = "json")]
+        format: String,
+    },
+    
+    /// Post Kubernetes cluster inventory data to FarmCore API
+    PostInventory {
+        /// FarmCore API base URL
+        #[arg(short, long, default_value = "http://localhost:6183")]
+        url: String,
     },
 }

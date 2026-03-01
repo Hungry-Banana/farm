@@ -3,9 +3,11 @@ pub mod components;
 pub mod query;
 pub mod bmc;
 pub mod vm;
+pub mod kubernetes;
 
 pub use server::*;
 pub use components::*;
 pub use query::*;
 pub use bmc::*;
 pub use vm::*;
+pub use kubernetes::*;

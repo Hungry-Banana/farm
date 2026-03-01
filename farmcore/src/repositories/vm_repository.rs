@@ -260,82 +260,15 @@ impl VmRepository {
 
     /// Update VM fields dynamically
     pub async fn update_vm(&self, vm_id: i32, updates: HashMap<String, serde_json::Value>) -> Result<bool, sqlx::Error> {
-        if updates.is_empty() {
-            return Ok(false);
-        }
-
-        // Get all field names from VirtualMachine struct using serde
-        let vm_fields: std::collections::HashSet<String> = {
-            let default_vm = VirtualMachine::default();
-            match serde_json::to_value(&default_vm) {
-                Ok(serde_json::Value::Object(map)) => {
-                    map.keys().cloned().collect()
-                },
-                _ => return Err(sqlx::Error::Protocol(
-                    "Failed to extract VirtualMachine field names".to_string()
-                ))
-            }
-        };
-
-        // Blacklist of fields that should never be updated (auto-managed or immutable)
-        let blacklisted_fields = [
-            "vm_id", "created_at", "updated_at"
-        ];
-
-        // Filter and validate updates
-        let mut set_clauses = Vec::new();
-        let mut values: Vec<String> = Vec::new();
-
-        for (field, value) in &updates {
-            // Check if field exists in struct
-            if !vm_fields.contains(field) {
-                return Err(sqlx::Error::Protocol(
-                    format!("Field '{}' does not exist in VirtualMachine", field)
-                ));
-            }
-
-            // Check if field is blacklisted
-            if blacklisted_fields.contains(&field.as_str()) {
-                return Err(sqlx::Error::Protocol(
-                    format!("Field '{}' is not allowed to be updated", field)
-                ));
-            }
-
-            set_clauses.push(format!("{} = ?", field));
-            
-            // Convert JSON value to SQL-compatible string
-            let sql_value = match value {
-                serde_json::Value::Null => "NULL".to_string(),
-                serde_json::Value::String(s) => format!("'{}'", s.replace("'", "''").replace("\\", "\\\\")),
-                serde_json::Value::Number(n) => n.to_string(),
-                serde_json::Value::Bool(b) => if *b { "1" } else { "0" }.to_string(),
-                _ => return Err(sqlx::Error::Protocol(
-                    format!("Unsupported value type for field '{}'", field)
-                )),
-            };
-            values.push(sql_value);
-        }
-
-        // Build the UPDATE query
-        let query = format!(
-            "UPDATE {} SET {}, updated_at = NOW() WHERE vm_id = {}",
+        let blacklisted_fields = ["vm_id", "created_at", "updated_at"];
+        DatabaseHelper::update(
+            &self.pool,
             VirtualMachine::TABLE,
-            set_clauses.join(", ").replace("?", "&"),
-            vm_id
-        );
-
-        // Replace placeholders with actual values
-        let mut final_query = query;
-        for value in values {
-            final_query = final_query.replacen("&", &value, 1);
-        }
-
-        // Execute the update
-        let result = sqlx::query(&final_query)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(result.rows_affected() > 0)
+            "vm_id",
+            vm_id,
+            updates,
+            &blacklisted_fields,
+        ).await
     }
     
     /// Upsert VMs from inventory data

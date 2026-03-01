@@ -277,13 +277,39 @@ export const API_ENDPOINTS = {
   // Kubernetes endpoints
   KUBERNETES: {
     // Overview and statistics
-    OVERVIEW: '/api/kubernetes/overview',
-    STATS: '/api/kubernetes/stats',
+    OVERVIEW: '/api/k8s/overview',
     
     // Cluster management
-    CLUSTERS: '/api/kubernetes/clusters',
-    CLUSTER_BY_ID: (id: number) => `/api/kubernetes/clusters/${id}`,
-    CLUSTER_DETAILS: (id: number) => `/api/kubernetes/clusters/${id}/details`,
-    CLUSTER_NODES: (id: number) => `/api/kubernetes/clusters/${id}/nodes`,
+    CLUSTERS: '/api/k8s/clusters',
+    CLUSTER_BY_ID: (id: number) => `/api/k8s/clusters/${id}`,
+    CLUSTER_WORKLOADS: (id: number) => `/api/k8s/clusters/${id}/workloads`,
+    CLUSTER_NAMESPACES: (id: number) => `/api/k8s/clusters/${id}/namespaces`,
+    CLUSTER_PODS: (id: number) => `/api/k8s/clusters/${id}/pods`,
+    CLUSTER_SERVICES: (id: number) => `/api/k8s/clusters/${id}/services`,
+    CLUSTER_EVENTS: (id: number) => `/api/k8s/clusters/${id}/events`,
+    
+    // Node management
+    NODES: '/api/k8s/nodes',
+    NODE_BY_ID: (id: number) => `/api/k8s/nodes/${id}`,
+    
+    // Namespace management
+    NAMESPACES: '/api/k8s/namespaces',
+    NAMESPACE_BY_ID: (id: number) => `/api/k8s/namespaces/${id}`,
+    
+    // Resource management
+    WORKLOADS: '/api/k8s/workloads',
+    PODS: '/api/k8s/pods',
+    SERVICES: '/api/k8s/services',
+    EVENTS: '/api/k8s/events',
+    
+    // Inventory
+    INVENTORY: '/api/k8s/inventory',
+    
+    // CRUD operations
+    CREATE_CLUSTER: '/api/k8s/clusters',
+    UPDATE_CLUSTER: (id: number) => `/api/k8s/clusters/${id}`,
+    DELETE_CLUSTER: (id: number) => `/api/k8s/clusters/${id}`,
+    UPDATE_NODE: (id: number) => `/api/k8s/nodes/${id}`,
+    DELETE_NODE: (id: number) => `/api/k8s/nodes/${id}`,
   }
 } as const;

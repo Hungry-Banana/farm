@@ -9,6 +9,7 @@ use crate::hardware::{
     collect_power_supplies,
 };
 use crate::output::output_data;
+use crate::commands::storage;
 
 pub fn handle_hardware_command(cmd: &HardwareCommands) -> Result<(), Box<dyn std::error::Error>> {
     match cmd {
@@ -64,6 +65,10 @@ pub fn handle_hardware_command(cmd: &HardwareCommands) -> Result<(), Box<dyn std
                 eprintln!("{}", error_text);
                 return Err(format!("Failed to post inventory: HTTP {}", status).into());
             }
+        }
+        HardwareCommands::PrimaryDisk { .. } | HardwareCommands::CreateRaid { .. } => {
+            // Delegate storage-specific commands to storage handler
+            storage::handle_storage_command(cmd)?;
         }
     }
     Ok(())

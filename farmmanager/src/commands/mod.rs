@@ -2,6 +2,7 @@ pub mod hardware;
 pub mod test;
 pub mod vm;
 pub mod k8s;
+pub mod storage;
 
 pub use hardware::handle_hardware_command;
 pub use test::handle_test_command;
