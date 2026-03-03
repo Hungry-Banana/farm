@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
-import DBTableSection from "@/components/ui/table/DBTableSection";
+import DBTableSection, { SearchCriteria } from "@/components/ui/table/DBTableSection";
 import { getClustersPaginated } from "@/lib/kubernetes";
 import KubernetesCellContent from "@/components/ui/table/KubernetesCellContent";
 
@@ -11,6 +11,10 @@ export default function KubernetesManagementPage() {
     const [clusters, setClusters] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [searchCriteria, setSearchCriteria] = useState<SearchCriteria[]>([]);
+    const itemsPerPage = 15;
 
     // Reorder cluster object keys to control column display order
     const reorderClusterKeys = (clusters: any[], keyOrder: string[]) => {
@@ -31,7 +35,17 @@ export default function KubernetesManagementPage() {
         const fetchClusters = async () => {
             try {
                 setLoading(true);
-                const response = await getClustersPaginated();
+                
+                // Convert SearchCriteria to the format expected by the API
+                const formattedCriteria = searchCriteria.map((criterion, index) => ({
+                    id: `search-${index}`,
+                    column: criterion.column,
+                    comparisonOperator: criterion.operator as any,
+                    term: criterion.value,
+                    operator: criterion.logicToNext || 'AND'
+                }));
+                
+                const response = await getClustersPaginated(currentPage, itemsPerPage, {}, formattedCriteria);
                 
                 // Define desired column order
                 const desiredOrder = [
@@ -58,6 +72,7 @@ export default function KubernetesManagementPage() {
                 // Extract and reorder the data array from the API response
                 const orderedClusters = reorderClusterKeys(response.data || [], desiredOrder);
                 setClusters(orderedClusters);
+                setTotalItems(response.total || 0);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch clusters');
             } finally {
@@ -66,7 +81,16 @@ export default function KubernetesManagementPage() {
         };
 
         fetchClusters();
-    }, []);
+    }, [currentPage, searchCriteria]);
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const handleSearch = (criteria: SearchCriteria[]) => {
+        setSearchCriteria(criteria);
+        setCurrentPage(1); // Reset to first page on new search
+    };
     
     return (
         <div>   
@@ -100,6 +124,12 @@ export default function KubernetesManagementPage() {
                         searchPlaceholder="Search clusters..."
                         keyField="cluster_id"
                         cellContentRenderer={KubernetesCellContent}
+                        totalItems={totalItems}
+                        currentPage={currentPage}
+                        onPageChange={handlePageChange}
+                        itemsPerPage={itemsPerPage}
+                        onSearch={handleSearch}
+                        activeCriteria={searchCriteria}
                     />
                 )}
             </div>

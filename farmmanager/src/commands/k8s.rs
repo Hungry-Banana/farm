@@ -437,6 +437,9 @@ struct K8sNodeInventory {
     roles: Option<String>,
     labels: Option<serde_json::Value>,
     taints: Option<serde_json::Value>,
+    gpu_count: Option<i32>,
+    gpu_product: Option<String>,
+    gpu_memory_mb: Option<i32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -524,10 +527,22 @@ fn collect_k8s_inventory() -> Result<K8sInventory, Box<dyn std::error::Error>> {
     println!("  - Collecting workloads...");
     let workloads = collect_workloads().ok();
     
+    // Calculate GPU statistics
+    let total_gpus: i32 = nodes.iter()
+        .filter_map(|n| n.gpu_count)
+        .sum();
+    
+    let gpu_nodes: usize = nodes.iter()
+        .filter(|n| n.gpu_count.is_some() && n.gpu_count.unwrap() > 0)
+        .count();
+    
     println!("✓ Inventory collection complete");
     println!("  Cluster: {}", cluster_name);
     println!("  Version: {}", cluster_version);
     println!("  Nodes: {}", nodes.len());
+    if gpu_nodes > 0 {
+        println!("  GPU Nodes: {} ({} total GPUs)", gpu_nodes, total_gpus);
+    }
     println!("  Namespaces: {}", namespaces.len());
     println!("  Pods: {}", pods.as_ref().map(|p| p.len()).unwrap_or(0));
     println!("  Services: {}", services.as_ref().map(|s| s.len()).unwrap_or(0));
@@ -714,6 +729,28 @@ fn collect_nodes() -> Result<Vec<K8sNodeInventory>, Box<dyn std::error::Error>> 
             let labels_json = item["metadata"]["labels"].clone();
             let taints_json = item["spec"]["taints"].clone();
             
+            // Extract GPU information from labels
+            let gpu_count = labels.and_then(|l| {
+                l.get("nvidia.com/gpu.count")
+                    .or_else(|| l.get("amd.com/gpu.count"))
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| s.parse::<i32>().ok())
+            });
+            
+            let gpu_product = labels.and_then(|l| {
+                l.get("nvidia.com/gpu.product")
+                    .or_else(|| l.get("amd.com/gpu.product"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.replace("-", " "))
+            });
+            
+            let gpu_memory_mb = labels.and_then(|l| {
+                l.get("nvidia.com/gpu.memory")
+                    .or_else(|| l.get("amd.com/gpu.memory"))
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| s.parse::<i32>().ok())
+            });
+            
             nodes.push(K8sNodeInventory {
                 node_name,
                 node_uid,
@@ -732,6 +769,9 @@ fn collect_nodes() -> Result<Vec<K8sNodeInventory>, Box<dyn std::error::Error>> 
                 roles,
                 labels: if labels_json.is_null() { None } else { Some(labels_json) },
                 taints: if taints_json.is_null() { None } else { Some(taints_json) },
+                gpu_count,
+                gpu_product,
+                gpu_memory_mb,
             });
         }
     }

@@ -42,7 +42,7 @@ const EditableFieldSection = ({ fields, onChange }: EditableFieldSectionProps) =
                         onChange={(e) => handleChange(field.name, e.target.value)}
                         placeholder={field.placeholder}
                         rows={field.rows || 3}
-                        className={`${baseClasses} w-full resize-none text-left min-w-full`}
+                        className={`${baseClasses} w-full resize-none text-left max-w-full`}
                     />
                 );
             

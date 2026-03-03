@@ -7,6 +7,7 @@ import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import FieldSection from "@/components/ui/FieldSection";
 import TableSection from "@/components/ui/table/TableSection";
 import { TabContainer, TabDefinition } from "@/components/ui/tab/TabContainer";
+import KubernetesActionsDropdown from "@/components/ui/Buttons/KubernetesActionButton";
 
 // Helper component for rendering status badges
 const StatusBadge = ({ status }: { status: string }) => {
@@ -433,6 +434,10 @@ export default function ClusterDetailPage() {
                                     <span className="text-sm text-muted-foreground">{cluster.distribution || 'Vanilla'}</span>
                                 </div>
                             </div>
+                        </div>
+
+                        <div>
+                            <KubernetesActionsDropdown clusterId={cluster.cluster_id} />
                         </div>
                     </div>
 

@@ -8,6 +8,7 @@ import { getServerById } from "@/lib/servers";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import FieldSection from "@/components/ui/FieldSection";
 import { TabContainer, TabDefinition } from "@/components/ui/tab/TabContainer";
+import VMActionsDropdown from "@/components/ui/Buttons/VMActionButton";
 
 const vmTabs: TabDefinition[] = [
     { id: "storage", label: "Storage", icon: "" },
@@ -308,13 +309,8 @@ export default function VMPage() {
                             </div>
                         </div>
 
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => router.push(`/servers/vms/${vmId}/edit`)}
-                                className="px-4 py-2 bg-primary text-white rounded-theme hover:bg-primary/90 transition-colors"
-                            >
-                                Edit VM
-                            </button>
+                        <div>
+                            <VMActionsDropdown vmId={vm.vm_id} />
                         </div>
                     </div>
 

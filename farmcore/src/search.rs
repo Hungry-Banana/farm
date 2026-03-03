@@ -204,7 +204,7 @@ impl SearchQueryBuilder {
         }
     }
     /// Build WHERE conditions from complex JSON search criteria
-    /// Applies intelligent grouping: same columns get parentheses, different columns connect directly
+    /// Processes criteria sequentially to preserve individual AND/OR logic operators
     pub fn build_complex_conditions(search_json: &str) -> Result<Vec<WhereCondition>, String> {
         match serde_json::from_str::<Vec<SearchCriterion>>(search_json) {
             Ok(search_criteria) => {
@@ -213,8 +213,8 @@ impl SearchQueryBuilder {
                 // Validate the criteria first
                 Self::validate_search_criteria(&search_criteria)?;
                 
-                // Apply intelligent grouping by column
-                let conditions = Self::build_grouped_conditions(&search_criteria);
+                // Process sequentially to preserve individual logic operators
+                let conditions = Self::build_sequential_conditions(&search_criteria);
                 
                 for (i, condition) in conditions.iter().enumerate() {
                     log::info!("Condition {}: {:?}", i, condition);
@@ -227,6 +227,44 @@ impl SearchQueryBuilder {
                 Err(format!("Invalid search criteria format: {}", e))
             }
         }
+    }
+
+    /// Build WHERE conditions sequentially, preserving individual logic operators
+    /// This allows for mixed AND/OR logic like: server_id = 1 OR server_name = 'farm' AND status = 'active'
+    fn build_sequential_conditions(search_criteria: &[SearchCriterion]) -> Vec<WhereCondition> {
+        if search_criteria.is_empty() {
+            return Vec::new();
+        }
+
+        let mut conditions = Vec::new();
+        
+        for (index, criterion) in search_criteria.iter().enumerate() {
+            let mut condition = Self::build_where_condition(criterion);
+            
+            // First condition should not have a logical operator
+            if index == 0 {
+                condition.logical_operator = None;
+            }
+            // For subsequent conditions, use the operator from the PREVIOUS criterion
+            // (which specifies how to connect to the NEXT criterion)
+            else if index > 0 {
+                let prev_criterion = &search_criteria[index - 1];
+                condition.logical_operator = prev_criterion.operator.as_ref().map(|op| match op {
+                    LogicalOperator::And => "AND".to_string(),
+                    LogicalOperator::Or => "OR".to_string(),
+                });
+            }
+            
+            conditions.push(condition);
+        }
+        
+        log::info!("Built {} sequential conditions from {} criteria", conditions.len(), search_criteria.len());
+        for (i, condition) in conditions.iter().enumerate() {
+            log::info!("Sequential condition {}: column='{}', op='{}', logical_op={:?}", 
+                i, condition.column, condition.operator, condition.logical_operator);
+        }
+        
+        conditions
     }
 
     /// Build grouped WHERE conditions with intelligent grouping

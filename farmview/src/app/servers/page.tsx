@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
-import DBTableSection from "@/components/ui/table/DBTableSection";
+import DBTableSection, { SearchCriteria } from "@/components/ui/table/DBTableSection";
 import { getServersPaginated } from "@/lib/servers";
 import ServerCellContent from "@/components/ui/table/ServerCellContent";
 
@@ -11,6 +11,10 @@ export default function ServerManagementPage() {
     const [servers, setServers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [searchCriteria, setSearchCriteria] = useState<SearchCriteria[]>([]);
+    const itemsPerPage = 15;
 
     // Reorder server object keys to control column display order
     const reorderServerKeys = (servers: any[], keyOrder: string[]) => {
@@ -31,7 +35,17 @@ export default function ServerManagementPage() {
         const fetchServers = async () => {
             try {
                 setLoading(true);
-                const response = await getServersPaginated();
+                
+                // Convert SearchCriteria to the format expected by the API
+                const formattedCriteria = searchCriteria.map((criterion, index) => ({
+                    id: `search-${index}`,
+                    column: criterion.column,
+                    comparisonOperator: criterion.operator as any,
+                    term: criterion.value,
+                    operator: criterion.logicToNext || 'AND'
+                }));
+                
+                const response = await getServersPaginated(currentPage, itemsPerPage, {}, formattedCriteria);
                 
                 // Define desired column order
                 const desiredOrder = [
@@ -59,6 +73,7 @@ export default function ServerManagementPage() {
                 // Extract and reorder the data array from the API response
                 const orderedServers = reorderServerKeys(response.data || [], desiredOrder);
                 setServers(orderedServers);
+                setTotalItems(response.total || 0);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch servers');
             } finally {
@@ -67,7 +82,16 @@ export default function ServerManagementPage() {
         };
 
         fetchServers();
-    }, []);
+    }, [currentPage, searchCriteria]);
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const handleSearch = (criteria: SearchCriteria[]) => {
+        setSearchCriteria(criteria);
+        setCurrentPage(1); // Reset to first page on new search
+    };
     
     return (
         <div>   
@@ -101,6 +125,12 @@ export default function ServerManagementPage() {
                         searchPlaceholder="Search servers..."
                         keyField="server_id"
                         cellContentRenderer={ServerCellContent}
+                        totalItems={totalItems}
+                        currentPage={currentPage}
+                        onPageChange={handlePageChange}
+                        itemsPerPage={itemsPerPage}
+                        onSearch={handleSearch}
+                        activeCriteria={searchCriteria}
                     />
                 )}
             </div>

@@ -14,6 +14,18 @@ import {
 export type { SearchCriteria, StructuredSearch, ColumnOperation, ValidationResult };
 
 /**
+ * Convert frontend SearchCriteria array to sequential format with individual logic operators
+ * This format maintains the exact order and logic operators between each criterion
+ */
+export function convertToSequentialFormat(criteria: SearchCriteria[]): SearchCriteria[] {
+  // Return criteria as-is since they already have the logic operators embedded
+  return criteria.map((c, index) => ({
+    ...c,
+    operator: index < criteria.length - 1 ? c.operator : undefined // Remove operator from last item
+  }));
+}
+
+/**
  * Convert frontend SearchCriteria array to new structured format
  * Groups criteria by column and handles logical operators properly
  */

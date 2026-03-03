@@ -151,14 +151,14 @@ export async function paginatedApiCall(
   searchCriteria: any[] = [],
   entityName = "items"
 ) {
-  const { convertToStructuredFormat, validateSearchCriteria } = await import('@/lib/searchFormat');
+  const { convertToSequentialFormat, validateSearchCriteria } = await import('@/lib/searchFormat');
   
   const params: Record<string, string | number | (string | number)[]> = {
     page,
     per_page: perPage,
   };
 
-  // Handle search criteria with new structured format
+  // Handle search criteria - use sequential format to preserve individual logic operators
   if (searchCriteria.length > 0) {
     console.log('🔍 Original search criteria:', searchCriteria);
     
@@ -177,13 +177,13 @@ export async function paginatedApiCall(
     );
     
     if (validCriteria.length > 0) {
-      // Convert to new structured format
-      const structuredSearch = convertToStructuredFormat(validCriteria);
-      console.log('🏗️  Converted to structured format:', structuredSearch);
+      // Convert to sequential format (preserves order and individual logic operators)
+      const sequentialSearch = convertToSequentialFormat(validCriteria);
+      console.log('🏗️  Converted to sequential format:', sequentialSearch);
       
-      // Send as JSON-encoded search parameter  
-      params.search = JSON.stringify(structuredSearch);
-      console.log('📤 Structured search parameter:', params.search);
+      // Send as JSON-encoded search parameter (backend will parse this as SearchCriterion array)
+      params.search = JSON.stringify(sequentialSearch);
+      console.log('📤 Sequential search parameter:', params.search);
     }
   }
 

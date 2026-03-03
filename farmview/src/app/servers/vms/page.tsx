@@ -2,14 +2,18 @@
 
 import { useState, useEffect } from "react";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
-import DBTableSection from "@/components/ui/table/DBTableSection";
+import DBTableSection, { SearchCriteria } from "@/components/ui/table/DBTableSection";
 import VMCellContent from "@/components/ui/table/VMCellContent";
-import { getVMs } from "@/lib/vms";
+import { getVMsPaginated } from "@/lib/vms";
 
 export default function VMManagementPage() {
     const [vms, setVMs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [searchCriteria, setSearchCriteria] = useState<SearchCriteria[]>([]);
+    const itemsPerPage = 15;
 
     // Reorder VM object keys to control column display order
     const reorderVMKeys = (vms: any[], keyOrder: string[]) => {
@@ -30,7 +34,17 @@ export default function VMManagementPage() {
         const fetchVMs = async () => {
             try {
                 setLoading(true);
-                const response = await getVMs();
+                
+                // Convert SearchCriteria to the format expected by the API
+                const formattedCriteria = searchCriteria.map((criterion, index) => ({
+                    id: `search-${index}`,
+                    column: criterion.column,
+                    comparisonOperator: criterion.operator as any,
+                    term: criterion.value,
+                    operator: criterion.logicToNext || 'AND'
+                }));
+                
+                const response = await getVMsPaginated(currentPage, itemsPerPage, {}, formattedCriteria);
                 
                 // Define desired column order
                 const desiredOrder = [
@@ -55,8 +69,9 @@ export default function VMManagementPage() {
                 ];
                 
                 // Extract and reorder the data array from the API response
-                const orderedVMs = reorderVMKeys(response || [], desiredOrder);
+                const orderedVMs = reorderVMKeys(response.data || [], desiredOrder);
                 setVMs(orderedVMs);
+                setTotalItems(response.total || 0);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch VMs');
             } finally {
@@ -65,7 +80,16 @@ export default function VMManagementPage() {
         };
 
         fetchVMs();
-    }, []);
+    }, [currentPage, searchCriteria]);
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const handleSearch = (criteria: SearchCriteria[]) => {
+        setSearchCriteria(criteria);
+        setCurrentPage(1); // Reset to first page on new search
+    };
     
     return (
         <div>   
@@ -99,6 +123,12 @@ export default function VMManagementPage() {
                         searchPlaceholder="Search virtual machines..."
                         keyField="vm_id"
                         cellContentRenderer={VMCellContent}
+                        totalItems={totalItems}
+                        currentPage={currentPage}
+                        onPageChange={handlePageChange}
+                        itemsPerPage={itemsPerPage}
+                        onSearch={handleSearch}
+                        activeCriteria={searchCriteria}
                     />
                 )}
             </div>
