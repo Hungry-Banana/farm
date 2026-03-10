@@ -4,6 +4,8 @@ pub mod components;
 pub mod migrations;
 pub mod vms;
 pub mod kubernetes;
+pub mod datacenters;
+pub mod clusters;
 
 use actix_web::web;
 
@@ -16,5 +18,7 @@ pub fn configure_v1_routes(cfg: &mut web::ServiceConfig) {
             .configure(migrations::configure_migration_routes)
             .configure(vms::configure_vm_routes)
             .configure(kubernetes::configure_k8s_routes)
+            .configure(datacenters::configure_datacenter_routes)
+            .configure(clusters::configure_cluster_routes)
     );
 }

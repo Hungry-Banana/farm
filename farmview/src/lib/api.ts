@@ -311,5 +311,62 @@ export const API_ENDPOINTS = {
     DELETE_CLUSTER: (id: number) => `/api/k8s/clusters/${id}`,
     UPDATE_NODE: (id: number) => `/api/k8s/nodes/${id}`,
     DELETE_NODE: (id: number) => `/api/k8s/nodes/${id}`,
+  },
+
+  // Datacenter endpoints
+  DATACENTERS: {
+    // Core datacenter operations
+    LIST: '/api/datacenters/list',
+    BY_ID: (id: number) => `/api/datacenters/${id}`,
+    WITH_RACKS: (id: number) => `/api/datacenters/${id}/with-racks`,
+    STATS: '/api/datacenters/stats',
+    DATACENTER_STATS: (id: number) => `/api/datacenters/${id}/stats`,
+    CREATE: '/api/datacenters',
+    UPDATE: (id: number) => `/api/datacenters/${id}`,
+    DELETE: (id: number) => `/api/datacenters/${id}`,
+    
+    // Rack management
+    RACKS: {
+      BY_DATACENTER: (datacenterId: number) => `/api/datacenters/${datacenterId}/racks`,
+      BY_ID: (rackId: number) => `/api/datacenters/racks/${rackId}`,
+      WITH_POSITIONS: (rackId: number) => `/api/datacenters/racks/${rackId}/with-positions`,
+      UTILIZATION: (rackId: number) => `/api/datacenters/racks/${rackId}/utilization`,
+      CREATE: (datacenterId: number) => `/api/datacenters/${datacenterId}/racks`,
+      UPDATE: (rackId: number) => `/api/datacenters/racks/${rackId}`,
+      DELETE: (rackId: number) => `/api/datacenters/racks/${rackId}`,
+      
+      // Position management within racks
+      POSITIONS: {
+        BY_RACK: (rackId: number) => `/api/datacenters/racks/${rackId}/positions`,
+        BY_ID: (positionId: number) => `/api/datacenters/positions/${positionId}`,
+        CREATE: (rackId: number) => `/api/datacenters/racks/${rackId}/positions`,
+        UPDATE: (positionId: number) => `/api/datacenters/positions/${positionId}`,
+        DELETE: (positionId: number) => `/api/datacenters/positions/${positionId}`,
+      }
+    }
+  },
+
+  // Cluster endpoints
+  CLUSTERS: {
+    // Core cluster operations
+    LIST: '/api/clusters/list',
+    BY_ID: (id: number) => `/api/clusters/${id}`,
+    WITH_SUB_CLUSTERS: (id: number) => `/api/clusters/${id}/with-sub-clusters`,
+    WITH_SERVERS: (id: number) => `/api/clusters/${id}/with-servers`,
+    STATS: '/api/clusters/stats',
+    CLUSTER_STATS: (id: number) => `/api/clusters/${id}/stats`,
+    CREATE: '/api/clusters',
+    UPDATE: (id: number) => `/api/clusters/${id}`,
+    DELETE: (id: number) => `/api/clusters/${id}`,
+    
+    // Sub-cluster management
+    SUB_CLUSTERS: {
+      BY_CLUSTER: (clusterId: number) => `/api/clusters/${clusterId}/sub-clusters`,
+      BY_ID: (subClusterId: number) => `/api/clusters/sub-clusters/${subClusterId}`,
+      STATS: (subClusterId: number) => `/api/clusters/sub-clusters/${subClusterId}/stats`,
+      CREATE: (clusterId: number) => `/api/clusters/${clusterId}/sub-clusters`,
+      UPDATE: (subClusterId: number) => `/api/clusters/sub-clusters/${subClusterId}`,
+      DELETE: (subClusterId: number) => `/api/clusters/sub-clusters/${subClusterId}`,
+    }
   }
 } as const;

@@ -20,6 +20,20 @@ export const NAV_DATA = [
     label: "MANAGEMENT",
     items: [
       {
+        title: "Data Centers",
+        icon: Icons.KubernetesIcon,
+        items: [
+          {
+            title: "Overview",
+            url: "/datacenters/overview",
+          },
+          {
+            title: "Data Center Management",
+            url: "/datacenters",
+          },
+        ],
+      },
+      {
         title: "Servers",
         icon: Icons.DefaultServerIcon,
         items: [
@@ -46,6 +60,20 @@ export const NAV_DATA = [
               {
                 title: "VM Management",
                 url: "/servers/vms",
+              },
+            ],
+          },
+          {
+            title: "Clusters",
+            icon: Icons.DefaultServerIcon,
+            items: [
+              {
+                title: "Overview",
+                url: "/clusters/overview",
+              },
+              {
+                title: "Cluster Management",
+                url: "/clusters",
               },
             ],
           },
