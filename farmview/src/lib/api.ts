@@ -368,5 +368,32 @@ export const API_ENDPOINTS = {
       UPDATE: (subClusterId: number) => `/api/clusters/sub-clusters/${subClusterId}`,
       DELETE: (subClusterId: number) => `/api/clusters/sub-clusters/${subClusterId}`,
     }
-  }
+  },
+
+  // Switch endpoints
+  SWITCHES: {
+    LIST: '/api/switches/get_switches',
+    STATS: '/api/switches/stats',
+    BY_ID: (id: number) => `/api/switches/${id}`,
+    SWITCH_STATS: (id: number) => `/api/switches/${id}/stats`,
+    CREATE: '/api/switches',
+    UPDATE: (id: number) => `/api/switches/${id}`,
+    DELETE: (id: number) => `/api/switches/${id}`,
+
+    // Port management
+    PORTS: {
+      BY_SWITCH: (switchId: number) => `/api/switches/${switchId}/ports`,
+      BY_ID: (portId: number) => `/api/switches/ports/${portId}`,
+      CREATE: (switchId: number) => `/api/switches/${switchId}/ports`,
+      UPDATE: (portId: number) => `/api/switches/ports/${portId}`,
+      DELETE: (portId: number) => `/api/switches/ports/${portId}`,
+    },
+
+    // VLAN management
+    VLANS: {
+      BY_SWITCH: (switchId: number) => `/api/switches/${switchId}/vlans`,
+      CREATE: (switchId: number) => `/api/switches/${switchId}/vlans`,
+      DELETE: (vlanDbId: number) => `/api/switches/vlans/${vlanDbId}`,
+    },
+  },
 } as const;

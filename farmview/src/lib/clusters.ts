@@ -185,3 +185,18 @@ export async function deleteSubCluster(sub_cluster_id: number) {
 		"Failed to delete sub-cluster:"
 	);
 }
+
+export async function getSubClusterWithServers(sub_cluster_id: number, cluster_id: number) {
+	return safeApiCall(
+		async () => {
+			// Filter by both sub_cluster_id and cluster_id so servers from other clusters
+			// that happen to share the same sub_cluster_id value are excluded.
+			const result = await apiRequest(
+				`${API_ENDPOINTS.SERVERS.LIST}?sub_cluster_id=${sub_cluster_id}&cluster_id=${cluster_id}`
+			);
+			return result?.data || [];
+		},
+		[],
+		`Failed to fetch servers for sub-cluster ${sub_cluster_id}:`
+	);
+}

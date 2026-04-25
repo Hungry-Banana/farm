@@ -2,6 +2,7 @@ use actix_web::{get, web, Responder, HttpResponse};
 use crate::database::DbPool;
 use crate::api::responses::ApiResponse;
 use crate::api::documentation::*;
+use crate::state::AppState;
 
 #[get("")]
 pub async fn index() -> impl Responder {
@@ -76,7 +77,8 @@ pub async fn index() -> impl Responder {
 }
 
 #[get("/health")]
-pub async fn health_check(pool: web::Data<DbPool>) -> impl Responder {
+pub async fn health_check(state: web::Data<AppState>) -> impl Responder {
+    let pool = state.pool();
     let start_time = std::time::Instant::now();
     let mut overall_healthy = true;
 
@@ -84,7 +86,7 @@ pub async fn health_check(pool: web::Data<DbPool>) -> impl Responder {
     let api_check = "ok";
 
     // Check database by calling our test_db logic
-    let (db_status, db_details) = match test_database_connection(&pool).await {
+    let (db_status, db_details) = match test_database_connection(pool).await {
         Ok(response_time) => (
             "ok",
             serde_json::json!({
@@ -127,8 +129,9 @@ pub async fn health_check(pool: web::Data<DbPool>) -> impl Responder {
 }
 
 #[get("/db-test")]
-pub async fn test_db(pool: web::Data<DbPool>) -> impl Responder {
-    match test_database_connection(&pool).await {
+pub async fn test_db(state: web::Data<AppState>) -> impl Responder {
+    let pool = state.pool();
+    match test_database_connection(pool).await {
         Ok(response_time) => {
             let response = ApiResponse::success(serde_json::json!({
                 "database": "connected",
@@ -149,11 +152,11 @@ pub async fn test_db(pool: web::Data<DbPool>) -> impl Responder {
 }
 
 // Helper function to test database connection and measure response time
-async fn test_database_connection(pool: &web::Data<DbPool>) -> Result<u128, String> {
+async fn test_database_connection(pool: &DbPool) -> Result<u128, String> {
     let start_time = std::time::Instant::now();
     
     match sqlx::query("SELECT 1 as test")
-        .fetch_one(pool.get_ref())
+        .fetch_one(pool)
         .await
     {
         Ok(_) => {

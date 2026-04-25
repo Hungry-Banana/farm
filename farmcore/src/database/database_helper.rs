@@ -146,53 +146,59 @@ impl DatabaseHelper {
             return Ok(false);
         }
 
-        // Build SET clauses
-        let mut set_clauses = Vec::new();
-        let mut values: Vec<String> = Vec::new();
-
-        for (field, value) in &updates {
-            // Check if field is blacklisted
+        let mut filtered: Vec<(String, serde_json::Value)> = Vec::new();
+        for (field, value) in updates {
             if blacklisted_fields.contains(&field.as_str()) {
                 return Err(sqlx::Error::Protocol(
                     format!("Field '{}' is not allowed to be updated", field)
                 ));
             }
-
-            set_clauses.push(format!("{} = ?", field));
-            
-            // Convert JSON value to SQL-compatible string
-            let sql_value = match value {
-                serde_json::Value::Null => "NULL".to_string(),
-                serde_json::Value::String(s) => format!("'{}'", s.replace("'", "''").replace("\\", "\\\\")),
-                serde_json::Value::Number(n) => n.to_string(),
-                serde_json::Value::Bool(b) => if *b { "1" } else { "0" }.to_string(),
-                _ => return Err(sqlx::Error::Protocol(
-                    format!("Unsupported value type for field '{}'", field)
-                )),
-            };
-            values.push(sql_value);
+            // Validate column name: only allow [a-zA-Z0-9_] to prevent SQL injection via column names
+            if !field.chars().all(|c| c.is_alphanumeric() || c == '_') {
+                return Err(sqlx::Error::Protocol(
+                    format!("Invalid field name: '{}'", field)
+                ));
+            }
+            filtered.push((field, value));
         }
 
-        // Build the UPDATE query with updated_at timestamp
-        let query = format!(
-            "UPDATE {} SET {}, updated_at = NOW() WHERE {} = {}",
+        if filtered.is_empty() {
+            return Ok(false);
+        }
+
+        // Build SET clause with ? placeholders (column names validated above)
+        let set_clauses: Vec<String> = filtered.iter()
+            .map(|(field, _)| format!("{} = ?", field))
+            .collect();
+
+        let sql = format!(
+            "UPDATE {} SET {}, updated_at = NOW() WHERE {} = ?",
             table_name,
-            set_clauses.join(", ").replace("?", "&"),
-            key_column,
-            id
+            set_clauses.join(", "),
+            key_column
         );
 
-        // Replace placeholders with actual values
-        let mut final_query = query;
-        for value in values {
-            final_query = final_query.replacen("&", &value, 1);
+        // Bind values using parameterized queries to prevent SQL injection
+        let mut q = sqlx::query(&sql);
+        for (_, value) in &filtered {
+            q = match value {
+                serde_json::Value::Null => q.bind(Option::<String>::None),
+                serde_json::Value::String(s) => q.bind(s.clone()),
+                serde_json::Value::Number(n) => {
+                    if let Some(i) = n.as_i64() {
+                        q.bind(i)
+                    } else {
+                        q.bind(n.as_f64().unwrap_or(0.0))
+                    }
+                }
+                serde_json::Value::Bool(b) => q.bind(*b as i8),
+                _ => return Err(sqlx::Error::Protocol(
+                    "Unsupported value type for update".to_string()
+                )),
+            };
         }
 
-        // Execute the update
-        let result = sqlx::query(&final_query)
-            .execute(pool)
-            .await?;
-
+        let result = q.bind(id).execute(pool).await?;
         Ok(result.rows_affected() > 0)
     }
 

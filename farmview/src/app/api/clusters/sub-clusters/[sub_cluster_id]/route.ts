@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { proxyToFarmCore } from '../../../proxy';
+import { proxyToFarmCore } from '@/app/api/proxy';
 
 // Shared handler that forwards any HTTP method to FarmCore for specific sub-cluster
 async function handler(

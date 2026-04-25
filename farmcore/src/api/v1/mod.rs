@@ -6,6 +6,7 @@ pub mod vms;
 pub mod kubernetes;
 pub mod datacenters;
 pub mod clusters;
+pub mod switches;
 
 use actix_web::web;
 
@@ -20,5 +21,6 @@ pub fn configure_v1_routes(cfg: &mut web::ServiceConfig) {
             .configure(kubernetes::configure_k8s_routes)
             .configure(datacenters::configure_datacenter_routes)
             .configure(clusters::configure_cluster_routes)
+            .configure(switches::configure_switch_routes)
     );
 }

@@ -1,5 +1,6 @@
 use sqlx::MySqlPool;
 use include_dir::{include_dir, Dir};
+// Seeds directory (triggers recompile when sql files are added/changed)
 
 static SEED_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/database/schema/seeds/development");
 

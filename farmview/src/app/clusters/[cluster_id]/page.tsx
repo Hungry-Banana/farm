@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { getClusterById, getClusterWithSubClusters, getClusterWithServers, getClusterStatsById } from "@/lib/clusters";
+import { getSwitchesByCluster } from "@/lib/switches";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import FieldSection from "@/components/ui/FieldSection";
 import TableSection from "@/components/ui/table/TableSection";
@@ -27,10 +29,13 @@ const ServersInventory = ({ servers }: { servers: any[] }) => {
             key: 'server_name',
             label: 'Server Name',
             render: (value, server) => (
-              <div className="flex items-center gap-2">
+              <Link 
+                href={`/servers/${server.server_id}`}
+                className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+              >
                 <span className="text-sm">🖥️</span>
                 <span className="font-medium">{value || `Server ${server.server_id}`}</span>
-              </div>
+              </Link>
             )
           },
           { key: 'server_id', label: 'ID' },
@@ -66,6 +71,65 @@ const ServersInventory = ({ servers }: { servers: any[] }) => {
   );
 };
 
+// Cluster Switches Component
+const SwitchesInventory = ({ switches }: { switches: any[] }) => {
+  if (!switches || switches.length === 0) {
+    return (
+      <div className="p-5 text-center">
+        <div className="text-muted-foreground">No switches found in this cluster</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5">
+      <TableSection
+        columns={[
+          {
+            key: 'switch_name',
+            label: 'Switch Name',
+            render: (value, sw) => (
+              <Link
+                href={`/networking/switches/${sw.switch_id}`}
+                className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+              >
+                <span className="text-sm">🔀</span>
+                <span className="font-medium">{value || `Switch ${sw.switch_id}`}</span>
+              </Link>
+            )
+          },
+          { key: 'switch_id', label: 'ID' },
+          {
+            key: 'status',
+            label: 'Status',
+            render: (value) => {
+              const statusColors: Record<string, string> = {
+                ACTIVE: 'text-green-500 bg-green-500/10 border-green-500/20',
+                INACTIVE: 'text-red-500 bg-red-500/10 border-red-500/20',
+                MAINTENANCE: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20',
+                NEW: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+              };
+              const colorClass = statusColors[value?.toUpperCase()] || 'text-gray-500 bg-gray-500/10 border-gray-500/20';
+              return (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-theme text-xs font-medium border ${colorClass}`}>
+                  {value || 'Unknown'}
+                </span>
+              );
+            }
+          },
+          { key: 'switch_role', label: 'Role' },
+          { key: 'mgmt_ip_address', label: 'Mgmt IP' },
+          { key: 'os_type', label: 'OS' },
+          { key: 'environment_type', label: 'Environment' },
+        ]}
+        data={switches}
+        keyField="switch_id"
+        searchable={true}
+      />
+    </div>
+  );
+};
+
 // Cluster Sub-Clusters Component
 const SubClustersInventory = ({ subClusters }: { subClusters: any[] }) => {
   if (!subClusters || subClusters.length === 0) {
@@ -84,10 +148,13 @@ const SubClustersInventory = ({ subClusters }: { subClusters: any[] }) => {
             key: 'sub_cluster_name',
             label: 'Sub-Cluster Name',
             render: (value, subCluster) => (
-              <div className="flex items-center gap-2">
+              <Link 
+                href={`/clusters/subclusters/${subCluster.sub_cluster_id}`}
+                className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+              >
                 <span className="text-sm">📁</span>
                 <span className="font-medium">{value || `Sub-Cluster ${subCluster.sub_cluster_id}`}</span>
-              </div>
+              </Link>
             )
           },
           { key: 'sub_cluster_id', label: 'ID' },
@@ -109,7 +176,7 @@ const SubClustersInventory = ({ subClusters }: { subClusters: any[] }) => {
               );
             }
           },
-          { key: 'environment_type', label: 'Environment' },
+          { key: 'sub_cluster_type', label: 'Type' },
           { key: 'total_servers', label: 'Total Servers' },
           { key: 'active_servers', label: 'Active Servers' },
           { key: 'description', label: 'Description' },
@@ -203,6 +270,7 @@ const ClusterStats = ({ stats }: { stats: any }) => {
 
 const clusterTabs: TabDefinition[] = [
   { id: "servers", label: "Servers", icon: "" },
+  { id: "switches", label: "Switches", icon: "" },
   { id: "sub-clusters", label: "Sub-Clusters", icon: "" },
   { id: "statistics", label: "Statistics", icon: "" },
 ];
@@ -213,21 +281,24 @@ export default function ClusterPage() {
   const [clusterData, setClusterData] = useState<any>(null);
   const [clusterWithServers, setClusterWithServers] = useState<any>(null);
   const [clusterWithSubClusters, setClusterWithSubClusters] = useState<any>(null);
+  const [clusterSwitches, setClusterSwitches] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadCluster() {
       try {
-        const [clData, clWithServers, clWithSubClusters, clStats] = await Promise.all([
+        const [clData, clWithServers, clWithSubClusters, clStats, clSwitches] = await Promise.all([
           getClusterById(clusterId),
           getClusterWithServers(clusterId),
           getClusterWithSubClusters(clusterId),
-          getClusterStatsById(clusterId)
+          getClusterStatsById(clusterId),
+          getSwitchesByCluster(clusterId),
         ]);
         setClusterData(clData);
         setClusterWithServers(clWithServers);
         setClusterWithSubClusters(clWithSubClusters);
+        setClusterSwitches(clSwitches || []);
         setStats(clStats);
       } catch (error) {
         console.error('Failed to load cluster:', error);
@@ -426,6 +497,7 @@ export default function ClusterPage() {
             defaultTab="servers"
             content={{
               "servers": <ServersInventory servers={clusterWithServers?.servers || []} />,
+              "switches": <SwitchesInventory switches={clusterSwitches} />,
               "sub-clusters": <SubClustersInventory subClusters={clusterWithSubClusters?.sub_clusters || []} />,
               "statistics": <ClusterStats stats={stats} />,
             }}

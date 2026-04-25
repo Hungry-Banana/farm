@@ -27,23 +27,17 @@ export default function ClusterEditPage() {
                 const cluster = Array.isArray(data) ? data[0] : data;
                 setFormData({
                     cluster_name: cluster.cluster_name || '',
-                    cluster_status: cluster.cluster_status || 'INACTIVE',
-                    cluster_state: cluster.cluster_state || 'UNKNOWN',
+                    cluster_status: cluster.cluster_status || 'inactive',
+                    cluster_state: cluster.cluster_state || 'ready',
                     cluster_version: cluster.cluster_version || '',
-                    distribution: cluster.distribution || 'vanilla',
-                    provider: cluster.provider || '',
-                    region: cluster.region || '',
-                    data_center_id: cluster.data_center_id || 0,
+                    distribution: cluster.distribution || '',
                     api_server_endpoint: cluster.api_server_endpoint || '',
-                    network_plugin: cluster.network_plugin || '',
-                    storage_class: cluster.storage_class || '',
+                    cni_plugin: cluster.cni_plugin || '',
                     cni_version: cluster.cni_version || '',
-                    control_plane_count: cluster.control_plane_count || 0,
-                    worker_node_count: cluster.worker_node_count || 0,
+                    control_plane_nodes: cluster.control_plane_nodes || 0,
                     monitoring_enabled: cluster.monitoring_enabled || false,
                     logging_enabled: cluster.logging_enabled || false,
-                    auto_scaling_enabled: cluster.auto_scaling_enabled || false,
-                    ha_enabled: cluster.ha_enabled || false,
+                    is_ha_enabled: cluster.is_ha_enabled || false,
                     description: cluster.description || '',
                 });
             } catch (error) {
@@ -62,7 +56,7 @@ export default function ClusterEditPage() {
 
     const handleFieldChange = (name: string, value: any) => {
         // Convert string 'true'/'false' to boolean for boolean fields
-        const booleanFields = ['monitoring_enabled', 'logging_enabled', 'auto_scaling_enabled', 'ha_enabled'];
+        const booleanFields = ['monitoring_enabled', 'logging_enabled', 'is_ha_enabled'];
         let processedValue = value;
         
         if (booleanFields.includes(name)) {
@@ -157,20 +151,20 @@ export default function ClusterEditPage() {
     }
 
     const statusOptions = [
-        { label: 'Active', value: 'ACTIVE' },
-        { label: 'Inactive', value: 'INACTIVE' },
-        { label: 'Maintenance', value: 'MAINTENANCE' },
-        { label: 'Archived', value: 'ARCHIVED' }
+        { label: 'Active', value: 'active' },
+        { label: 'Inactive', value: 'inactive' },
+        { label: 'Maintenance', value: 'maintenance' },
+        { label: 'Archived', value: 'archived' }
     ];
 
     const stateOptions = [
-        { label: 'Ready', value: 'READY' },
-        { label: 'Degraded', value: 'DEGRADED' },
-        { label: 'Initializing', value: 'INITIALIZING' },
-        { label: 'Upgrading', value: 'UPGRADING' },
-        { label: 'Offline', value: 'OFFLINE' },
-        { label: 'Error', value: 'ERROR' },
-        { label: 'Maintenance', value: 'MAINTENANCE' }
+        { label: 'Ready', value: 'ready' },
+        { label: 'Degraded', value: 'degraded' },
+        { label: 'Initializing', value: 'initializing' },
+        { label: 'Upgrading', value: 'upgrading' },
+        { label: 'Offline', value: 'offline' },
+        { label: 'Error', value: 'error' },
+        { label: 'Maintenance', value: 'maintenance' }
     ];
 
     const distributionOptions = [
@@ -188,17 +182,7 @@ export default function ClusterEditPage() {
         { label: 'Kubeadm', value: 'kubeadm' }
     ];
 
-    const providerOptions = [
-        { label: 'On-Premise', value: 'on-premise' },
-        { label: 'AWS', value: 'aws' },
-        { label: 'Azure', value: 'azure' },
-        { label: 'GCP', value: 'gcp' },
-        { label: 'Digital Ocean', value: 'digitalocean' },
-        { label: 'Linode', value: 'linode' },
-        { label: 'Other', value: 'other' }
-    ];
-
-    const networkPluginOptions = [
+    const cniPluginOptions = [
         { label: 'Calico', value: 'calico' },
         { label: 'Flannel', value: 'flannel' },
         { label: 'Cilium', value: 'cilium' },
@@ -315,44 +299,6 @@ export default function ClusterEditPage() {
                         </div>
                     </div>
 
-                    {/* Provider & Location Section */}
-                    <div>
-                        <h3 className="text-md font-semibold text-foreground mb-4 flex items-center gap-2">
-                            Provider & Location
-                        </h3>
-                        <div className="px-2 rounded-theme bg-accent/10">
-                            <EditableFieldSection
-                                fields={[
-                                    { 
-                                        label: 'Provider', 
-                                        value: formData.provider, 
-                                        icon: '', 
-                                        name: 'provider',
-                                        type: 'select',
-                                        options: providerOptions
-                                    },
-                                    { 
-                                        label: 'Region', 
-                                        value: formData.region, 
-                                        icon: '', 
-                                        name: 'region',
-                                        type: 'text',
-                                        placeholder: 'e.g., us-east-1'
-                                    },
-                                    { 
-                                        label: 'Data Center ID', 
-                                        value: formData.data_center_id, 
-                                        icon: '', 
-                                        name: 'data_center_id',
-                                        type: 'number',
-                                        placeholder: '0'
-                                    }
-                                ]}
-                                onChange={handleFieldChange}
-                            />
-                        </div>
-                    </div>
-
                     {/* Network Configuration Section */}
                     <div>
                         <h3 className="text-md font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -370,12 +316,12 @@ export default function ClusterEditPage() {
                                         placeholder: 'https://api.cluster.example.com:6443'
                                     },
                                     { 
-                                        label: 'Network Plugin', 
-                                        value: formData.network_plugin, 
+                                        label: 'CNI Plugin', 
+                                        value: formData.cni_plugin, 
                                         icon: '', 
-                                        name: 'network_plugin',
+                                        name: 'cni_plugin',
                                         type: 'select',
-                                        options: networkPluginOptions
+                                        options: cniPluginOptions
                                     },
                                     { 
                                         label: 'CNI Version', 
@@ -384,14 +330,6 @@ export default function ClusterEditPage() {
                                         name: 'cni_version',
                                         type: 'text',
                                         placeholder: 'CNI version'
-                                    },
-                                    { 
-                                        label: 'Storage Class', 
-                                        value: formData.storage_class, 
-                                        icon: '', 
-                                        name: 'storage_class',
-                                        type: 'text',
-                                        placeholder: 'Storage class name'
                                     }
                                 ]}
                                 onChange={handleFieldChange}
@@ -409,17 +347,9 @@ export default function ClusterEditPage() {
                                 fields={[
                                     { 
                                         label: 'Control Plane Nodes', 
-                                        value: formData.control_plane_count, 
+                                        value: formData.control_plane_nodes, 
                                         icon: '', 
-                                        name: 'control_plane_count',
-                                        type: 'number',
-                                        placeholder: '0'
-                                    },
-                                    { 
-                                        label: 'Worker Nodes', 
-                                        value: formData.worker_node_count, 
-                                        icon: '', 
-                                        name: 'worker_node_count',
+                                        name: 'control_plane_nodes',
                                         type: 'number',
                                         placeholder: '0'
                                     }
@@ -460,21 +390,10 @@ export default function ClusterEditPage() {
                                         ]
                                     },
                                     { 
-                                        label: 'Auto Scaling', 
-                                        value: formData.auto_scaling_enabled ? 'true' : 'false', 
-                                        icon: '', 
-                                        name: 'auto_scaling_enabled',
-                                        type: 'select',
-                                        options: [
-                                            { label: 'Yes', value: 'true' },
-                                            { label: 'No', value: 'false' }
-                                        ]
-                                    },
-                                    { 
                                         label: 'High Availability', 
-                                        value: formData.ha_enabled ? 'true' : 'false', 
+                                        value: formData.is_ha_enabled ? 'true' : 'false', 
                                         icon: '', 
-                                        name: 'ha_enabled',
+                                        name: 'is_ha_enabled',
                                         type: 'select',
                                         options: [
                                             { label: 'Yes', value: 'true' },
@@ -529,27 +448,6 @@ export default function ClusterEditPage() {
                                         value: cluster.updated_at ? new Date(cluster.updated_at).toLocaleDateString() : 'N/A', 
                                         icon: '', 
                                         name: 'updated_at',
-                                        disabled: true
-                                    },
-                                    { 
-                                        label: 'Last Inventory', 
-                                        value: cluster.last_inventory_at ? new Date(cluster.last_inventory_at).toLocaleDateString() : 'N/A', 
-                                        icon: '', 
-                                        name: 'last_inventory_at',
-                                        disabled: true
-                                    },
-                                    { 
-                                        label: 'Total Pods', 
-                                        value: cluster.total_pods || '0', 
-                                        icon: '', 
-                                        name: 'total_pods',
-                                        disabled: true
-                                    },
-                                    { 
-                                        label: 'Total Namespaces', 
-                                        value: cluster.total_namespaces || '0', 
-                                        icon: '', 
-                                        name: 'total_namespaces',
                                         disabled: true
                                     }
                                 ]}

@@ -6,6 +6,7 @@ pub mod vm;
 pub mod kubernetes;
 pub mod datacenter;
 pub mod cluster;
+pub mod switch;
 
 pub use server::*;
 pub use components::*;
@@ -15,3 +16,4 @@ pub use vm::*;
 pub use kubernetes::*;
 pub use datacenter::*;
 pub use cluster::*;
+pub use switch::*;

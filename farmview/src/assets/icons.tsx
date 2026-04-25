@@ -130,6 +130,36 @@ export function NetworkingDeviceIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+export function SwitchIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="24"
+      height="24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      {/* Switch chassis */}
+      <rect x="2" y="8" width="20" height="8" rx="2" />
+      {/* Port indicators */}
+      <rect x="5" y="11" width="2" height="2" rx="0.5" />
+      <rect x="9" y="11" width="2" height="2" rx="0.5" />
+      <rect x="13" y="11" width="2" height="2" rx="0.5" />
+      <rect x="17" y="11" width="2" height="2" rx="0.5" />
+      {/* Uplink arrows */}
+      <path d="M7 8V5" />
+      <path d="M17 8V5" />
+      <path d="M5 5h4" />
+      <path d="M15 5h4" />
+    </svg>
+  );
+}
+
 export function DatabaseIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg

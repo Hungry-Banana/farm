@@ -140,53 +140,15 @@ impl ClusterRepository {
         cluster_id: i32,
         updates: HashMap<String, serde_json::Value>
     ) -> Result<bool, sqlx::Error> {
-        if updates.is_empty() {
-            return Ok(false);
-        }
-
-        let blacklisted_fields = ["cluster_id", "created_at", "total_servers", "active_servers"];
-        
-        let mut set_clauses = Vec::new();
-        let mut values: Vec<String> = Vec::new();
-
-        for (field, value) in updates.iter() {
-            if blacklisted_fields.contains(&field.as_str()) {
-                continue;
-            }
-
-            let value_str = match value {
-                serde_json::Value::String(s) => format!("'{}'", s.replace("'", "''")),
-                serde_json::Value::Number(n) => n.to_string(),
-                serde_json::Value::Bool(b) => if *b { "1" } else { "0" }.to_string(),
-                serde_json::Value::Null => "NULL".to_string(),
-                _ => format!("'{}'", value.to_string().replace("'", "''")),
-            };
-
-            set_clauses.push(format!("{} = ?", field));
-            values.push(value_str);
-        }
-
-        if set_clauses.is_empty() {
-            return Ok(false);
-        }
-
-        let query = format!(
-            "UPDATE {} SET {}, updated_at = CURRENT_TIMESTAMP WHERE cluster_id = {}",
+        let blacklisted_fields = ["cluster_id", "created_at", "updated_at", "total_servers", "active_servers"];
+        DatabaseHelper::update(
+            &self.pool,
             ServerCluster::TABLE,
-            set_clauses.join(", "),
-            cluster_id
-        );
-
-        let mut final_query = query;
-        for value in values {
-            final_query = final_query.replacen("?", &value, 1);
-        }
-
-        let result = sqlx::query(&final_query)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(result.rows_affected() > 0)
+            ServerCluster::KEY,
+            cluster_id,
+            updates,
+            &blacklisted_fields,
+        ).await
     }
 
     /// Delete a cluster (cascade will handle sub-clusters)
@@ -204,17 +166,45 @@ impl ClusterRepository {
         Ok(result.rows_affected() > 0)
     }
 
-    /// Get all sub-clusters for a cluster
+    /// Get all sub-clusters for a cluster, with live server counts computed from the servers table
     pub async fn get_sub_clusters_by_cluster(&self, cluster_id: i32) -> Result<Vec<ServerSubCluster>, sqlx::Error> {
         let query = format!(
             "SELECT * FROM {} WHERE cluster_id = ? ORDER BY sub_cluster_name",
             ServerSubCluster::TABLE
         );
 
-        sqlx::query_as(&query)
+        let mut sub_clusters: Vec<ServerSubCluster> = sqlx::query_as(&query)
             .bind(cluster_id)
             .fetch_all(&self.pool)
-            .await
+            .await?;
+
+        // Compute live total/active counts per sub-cluster from the servers table,
+        // anchored to this cluster so cross-cluster servers are excluded.
+        let counts: Vec<(i32, i64, i64)> = sqlx::query_as(
+            "SELECT sub_cluster_id,
+                    COUNT(*) AS total,
+                    COUNT(CASE WHEN status = 'ACTIVE' THEN 1 END) AS active
+             FROM servers
+             WHERE cluster_id = ? AND sub_cluster_id IS NOT NULL
+             GROUP BY sub_cluster_id"
+        )
+        .bind(cluster_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let counts_map: HashMap<i32, (i64, i64)> = counts
+            .into_iter()
+            .map(|(id, total, active)| (id, (total, active)))
+            .collect();
+
+        for sc in &mut sub_clusters {
+            if let Some(&(total, active)) = counts_map.get(&sc.sub_cluster_id) {
+                sc.total_servers = Some(total as i32);
+                sc.active_servers = Some(active as i32);
+            }
+        }
+
+        Ok(sub_clusters)
     }
 
     /// Get a single sub-cluster by ID
@@ -258,53 +248,15 @@ impl ClusterRepository {
         sub_cluster_id: i32,
         updates: HashMap<String, serde_json::Value>
     ) -> Result<bool, sqlx::Error> {
-        if updates.is_empty() {
-            return Ok(false);
-        }
-
-        let blacklisted_fields = ["sub_cluster_id", "created_at", "total_servers", "active_servers"];
-        
-        let mut set_clauses = Vec::new();
-        let mut values: Vec<String> = Vec::new();
-
-        for (field, value) in updates.iter() {
-            if blacklisted_fields.contains(&field.as_str()) {
-                continue;
-            }
-
-            let value_str = match value {
-                serde_json::Value::String(s) => format!("'{}'", s.replace("'", "''")),
-                serde_json::Value::Number(n) => n.to_string(),
-                serde_json::Value::Bool(b) => if *b { "1" } else { "0" }.to_string(),
-                serde_json::Value::Null => "NULL".to_string(),
-                _ => format!("'{}'", value.to_string().replace("'", "''")),
-            };
-
-            set_clauses.push(format!("{} = ?", field));
-            values.push(value_str);
-        }
-
-        if set_clauses.is_empty() {
-            return Ok(false);
-        }
-
-        let query = format!(
-            "UPDATE {} SET {}, updated_at = CURRENT_TIMESTAMP WHERE sub_cluster_id = {}",
+        let blacklisted_fields = ["sub_cluster_id", "cluster_id", "created_at", "updated_at", "total_servers", "active_servers"];
+        DatabaseHelper::update(
+            &self.pool,
             ServerSubCluster::TABLE,
-            set_clauses.join(", "),
-            sub_cluster_id
-        );
-
-        let mut final_query = query;
-        for value in values {
-            final_query = final_query.replacen("?", &value, 1);
-        }
-
-        let result = sqlx::query(&final_query)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(result.rows_affected() > 0)
+            ServerSubCluster::KEY,
+            sub_cluster_id,
+            updates,
+            &blacklisted_fields,
+        ).await
     }
 
     /// Delete a sub-cluster
@@ -447,19 +399,23 @@ impl ClusterRepository {
         let sub_cluster = self.get_sub_cluster_by_id(sub_cluster_id).await?
             .ok_or_else(|| sqlx::Error::RowNotFound)?;
 
-        // Get server count
+        let cluster_id = sub_cluster.cluster_id;
+
+        // Filter by both sub_cluster_id AND cluster_id to prevent cross-cluster leakage
         let server_count: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM servers WHERE sub_cluster_id = ?"
+            "SELECT COUNT(*) FROM servers WHERE sub_cluster_id = ? AND cluster_id = ?"
         )
         .bind(sub_cluster_id)
+        .bind(cluster_id)
         .fetch_one(&self.pool)
         .await?;
 
         // Get active server count
         let active_server_count: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM servers WHERE sub_cluster_id = ? AND status = 'ACTIVE'"
+            "SELECT COUNT(*) FROM servers WHERE sub_cluster_id = ? AND cluster_id = ? AND status = 'ACTIVE'"
         )
         .bind(sub_cluster_id)
+        .bind(cluster_id)
         .fetch_one(&self.pool)
         .await?;
 
@@ -467,10 +423,11 @@ impl ClusterRepository {
         let status_counts: Vec<(String, i64)> = sqlx::query_as(
             "SELECT status, COUNT(*) as count 
              FROM servers 
-             WHERE sub_cluster_id = ? 
+             WHERE sub_cluster_id = ? AND cluster_id = ?
              GROUP BY status"
         )
         .bind(sub_cluster_id)
+        .bind(cluster_id)
         .fetch_all(&self.pool)
         .await?;
 

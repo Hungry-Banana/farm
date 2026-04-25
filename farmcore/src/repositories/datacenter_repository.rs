@@ -143,53 +143,15 @@ impl DatacenterRepository {
         datacenter_id: i32,
         updates: HashMap<String, serde_json::Value>
     ) -> Result<bool, sqlx::Error> {
-        if updates.is_empty() {
-            return Ok(false);
-        }
-
-        let blacklisted_fields = ["data_center_id", "created_at"];
-        
-        let mut set_clauses = Vec::new();
-        let mut values: Vec<String> = Vec::new();
-
-        for (field, value) in updates.iter() {
-            if blacklisted_fields.contains(&field.as_str()) {
-                continue;
-            }
-
-            let value_str = match value {
-                serde_json::Value::String(s) => format!("'{}'", s.replace("'", "''")),
-                serde_json::Value::Number(n) => n.to_string(),
-                serde_json::Value::Bool(b) => if *b { "1" } else { "0" }.to_string(),
-                serde_json::Value::Null => "NULL".to_string(),
-                _ => format!("'{}'", value.to_string().replace("'", "''")),
-            };
-
-            set_clauses.push(format!("{} = ?", field));
-            values.push(value_str);
-        }
-
-        if set_clauses.is_empty() {
-            return Ok(false);
-        }
-
-        let query = format!(
-            "UPDATE {} SET {}, updated_at = CURRENT_TIMESTAMP WHERE data_center_id = {}",
+        let blacklisted_fields = ["data_center_id", "created_at", "updated_at"];
+        DatabaseHelper::update(
+            &self.pool,
             Datacenter::TABLE,
-            set_clauses.join(", "),
-            datacenter_id
-        );
-
-        let mut final_query = query;
-        for value in values {
-            final_query = final_query.replacen("?", &value, 1);
-        }
-
-        let result = sqlx::query(&final_query)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(result.rows_affected() > 0)
+            Datacenter::KEY,
+            datacenter_id,
+            updates,
+            &blacklisted_fields,
+        ).await
     }
 
     /// Delete a datacenter (cascade will handle racks)
@@ -290,53 +252,15 @@ impl DatacenterRepository {
         rack_id: i32,
         updates: HashMap<String, serde_json::Value>
     ) -> Result<bool, sqlx::Error> {
-        if updates.is_empty() {
-            return Ok(false);
-        }
-
-        let blacklisted_fields = ["rack_id", "created_at"];
-        
-        let mut set_clauses = Vec::new();
-        let mut values: Vec<String> = Vec::new();
-
-        for (field, value) in updates.iter() {
-            if blacklisted_fields.contains(&field.as_str()) {
-                continue;
-            }
-
-            let value_str = match value {
-                serde_json::Value::String(s) => format!("'{}'", s.replace("'", "''")),
-                serde_json::Value::Number(n) => n.to_string(),
-                serde_json::Value::Bool(b) => if *b { "1" } else { "0" }.to_string(),
-                serde_json::Value::Null => "NULL".to_string(),
-                _ => format!("'{}'", value.to_string().replace("'", "''")),
-            };
-
-            set_clauses.push(format!("{} = ?", field));
-            values.push(value_str);
-        }
-
-        if set_clauses.is_empty() {
-            return Ok(false);
-        }
-
-        let query = format!(
-            "UPDATE {} SET {}, updated_at = CURRENT_TIMESTAMP WHERE rack_id = {}",
+        let blacklisted_fields = ["rack_id", "data_center_id", "created_at", "updated_at"];
+        DatabaseHelper::update(
+            &self.pool,
             DatacenterRack::TABLE,
-            set_clauses.join(", "),
-            rack_id
-        );
-
-        let mut final_query = query;
-        for value in values {
-            final_query = final_query.replacen("?", &value, 1);
-        }
-
-        let result = sqlx::query(&final_query)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(result.rows_affected() > 0)
+            DatacenterRack::KEY,
+            rack_id,
+            updates,
+            &blacklisted_fields,
+        ).await
     }
 
     /// Delete a rack (cascade will handle positions)
@@ -404,53 +328,15 @@ impl DatacenterRepository {
         position_id: i32,
         updates: HashMap<String, serde_json::Value>
     ) -> Result<bool, sqlx::Error> {
-        if updates.is_empty() {
-            return Ok(false);
-        }
-
-        let blacklisted_fields = ["rack_position_id", "created_at"];
-        
-        let mut set_clauses = Vec::new();
-        let mut values: Vec<String> = Vec::new();
-
-        for (field, value) in updates.iter() {
-            if blacklisted_fields.contains(&field.as_str()) {
-                continue;
-            }
-
-            let value_str = match value {
-                serde_json::Value::String(s) => format!("'{}'", s.replace("'", "''")),
-                serde_json::Value::Number(n) => n.to_string(),
-                serde_json::Value::Bool(b) => if *b { "1" } else { "0" }.to_string(),
-                serde_json::Value::Null => "NULL".to_string(),
-                _ => format!("'{}'", value.to_string().replace("'", "''")),
-            };
-
-            set_clauses.push(format!("{} = ?", field));
-            values.push(value_str);
-        }
-
-        if set_clauses.is_empty() {
-            return Ok(false);
-        }
-
-        let query = format!(
-            "UPDATE {} SET {}, updated_at = CURRENT_TIMESTAMP WHERE rack_position_id = {}",
+        let blacklisted_fields = ["rack_position_id", "rack_id", "created_at", "updated_at"];
+        DatabaseHelper::update(
+            &self.pool,
             DatacenterRackPosition::TABLE,
-            set_clauses.join(", "),
-            position_id
-        );
-
-        let mut final_query = query;
-        for value in values {
-            final_query = final_query.replacen("?", &value, 1);
-        }
-
-        let result = sqlx::query(&final_query)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(result.rows_affected() > 0)
+            DatacenterRackPosition::KEY,
+            position_id,
+            updates,
+            &blacklisted_fields,
+        ).await
     }
 
     /// Delete a position

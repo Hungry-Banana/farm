@@ -148,8 +148,8 @@ const VMCellContent: React.FC<VMCellContentProps> = ({ columnKey, value, item, e
         </div>
       );
 
-    case 'guest_os_distribution':
-    case 'os_distribution':
+    case 'guest_os_architecture':
+    case 'os_architecture':
       return (
         <div className="font-medium text-sm">
           {value || '-'}
@@ -158,7 +158,6 @@ const VMCellContent: React.FC<VMCellContentProps> = ({ columnKey, value, item, e
 
     case 'vm_uuid':
     case 'uuid':
-    case 'instance_uuid':
       return (
         <div className="font-mono text-xs text-muted-foreground truncate max-w-xs" title={value}>
           {value || '-'}

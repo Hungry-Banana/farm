@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS server_clusters (
 
 -- Sub-Clusters Table
 -- Represents logical groupings within a cluster (e.g., compute pool, storage pool, etc.)
+-- sub_cluster_id is a globally unique AUTO_INCREMENT PK; cluster_id is a FK to server_clusters.
 CREATE TABLE IF NOT EXISTS server_sub_clusters (
     sub_cluster_id INT PRIMARY KEY AUTO_INCREMENT,
     cluster_id INT NOT NULL,
@@ -81,9 +82,9 @@ CREATE TABLE IF NOT EXISTS server_sub_clusters (
     
     FOREIGN KEY (cluster_id) REFERENCES server_clusters(cluster_id) ON DELETE CASCADE,
     
-    UNIQUE KEY uk_sub_cluster (cluster_id, sub_cluster_code),
+    UNIQUE KEY uk_sub_cluster_code (cluster_id, sub_cluster_code),
+    INDEX idx_cluster (cluster_id),
     INDEX idx_sub_cluster_name (sub_cluster_name),
-    INDEX idx_cluster_id (cluster_id),
     INDEX idx_status (status),
     INDEX idx_type (sub_cluster_type)
 );

@@ -80,6 +80,22 @@ export const NAV_DATA = [
         ],
       },
       {
+        title: "Networking",
+        icon: Icons.NetworkingDeviceIcon,
+        items: [
+          {
+            title: "Switches",
+            icon: Icons.SwitchIcon,
+            items: [
+              {
+                title: "Switch Management",
+                url: "/networking/switches",
+              },
+            ],
+          },
+        ],
+      },
+      {
         title: "Kubernetes",
         icon: Icons.KubernetesIcon,
         items: [

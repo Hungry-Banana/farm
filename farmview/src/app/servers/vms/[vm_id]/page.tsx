@@ -73,7 +73,7 @@ const OverviewTab = ({ vm, server }: { vm: any; server: any }) => {
                             <FieldSection fields={[
                                 { label: 'Guest OS Family', value: vm.guest_os_family, icon: '' },
                                 { label: 'Guest OS Version', value: vm.guest_os_version, icon: '' },
-                                { label: 'Guest OS Distribution', value: vm.guest_os_distribution, icon: '' }
+                                { label: 'Guest OS Architecture', value: vm.guest_os_architecture, icon: '' }
                             ]} />
 
                             {/* Separator Line */}
@@ -125,8 +125,7 @@ const OverviewTab = ({ vm, server }: { vm: any; server: any }) => {
 
                             {/* VM Identification */}
                             <FieldSection fields={[
-                                { label: 'VM UUID', value: vm.vm_uuid, icon: '' },
-                                { label: 'Instance UUID', value: vm.instance_uuid, icon: '' }
+                                { label: 'VM UUID', value: vm.vm_uuid, icon: '' }
                             ]} />
 
                             {/* Separator Line */}
@@ -359,7 +358,7 @@ export default function VMPage() {
                                         <FieldSection fields={[
                                             { label: 'Guest OS Family', value: vm.guest_os_family, icon: '' },
                                             { label: 'Guest OS Version', value: vm.guest_os_version, icon: '' },
-                                            { label: 'Guest OS Distribution', value: vm.guest_os_distribution, icon: '' }
+                                            { label: 'Guest OS Architecture', value: vm.guest_os_architecture, icon: '' }
                                         ]} />
                                     </div>
                                 </div>
@@ -380,8 +379,7 @@ export default function VMPage() {
 
                                         {/* VM Identification */}
                                         <FieldSection fields={[
-                                            { label: 'VM UUID', value: vm.vm_uuid, icon: '' },
-                                            { label: 'Instance UUID', value: vm.instance_uuid, icon: '' }
+                                            { label: 'VM UUID', value: vm.vm_uuid, icon: '' }
                                         ]} />
 
                                         {/* Separator Line */}

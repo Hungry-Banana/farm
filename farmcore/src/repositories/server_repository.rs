@@ -556,88 +556,22 @@ impl ServerRepository {
     }
 
     /// Update server with dynamic field updates
-    /// Takes a HashMap of field names to values and builds a dynamic UPDATE query
     pub async fn update_server(
         &self,
         server_id: i32,
         updates: HashMap<String, serde_json::Value>
     ) -> Result<bool, sqlx::Error> {
-        if updates.is_empty() {
-            return Ok(false);
-        }
-
-        // Get all field names from Server struct using serde
-        let server_fields: std::collections::HashSet<String> = {
-            let default_server = Server::default();
-            match serde_json::to_value(&default_server) {
-                Ok(serde_json::Value::Object(map)) => {
-                    map.keys().cloned().collect()
-                },
-                _ => return Err(sqlx::Error::Protocol(
-                    "Failed to extract Server field names".to_string()
-                ))
-            }
-        };
-
-        // Blacklist of fields that should never be updated (auto-managed or immutable)
         let blacklisted_fields = [
-            "server_id", "created_at", "updated_at", "last_inventory_at", "component_motherboard_id"
+            "server_id", "created_at", "updated_at", "last_inventory_at",
         ];
-
-        // Filter and validate updates
-        let mut set_clauses = Vec::new();
-        let mut values: Vec<String> = Vec::new();
-
-        for (field, value) in updates.iter() {
-            // Check if field exists in Server struct
-            if !server_fields.contains(field) {
-                return Err(sqlx::Error::Protocol(
-                    format!("Field '{}' does not exist in Server model", field)
-                ));
-            }
-
-            // Check if field is blacklisted
-            if blacklisted_fields.contains(&field.as_str()) {
-                return Err(sqlx::Error::Protocol(
-                    format!("Field '{}' is not allowed to be updated", field)
-                ));
-            }
-
-            set_clauses.push(format!("{} = ?", field));
-            
-            // Convert JSON value to SQL-compatible string
-            let sql_value = match value {
-                serde_json::Value::Null => "NULL".to_string(),
-                serde_json::Value::String(s) => format!("'{}'", s.replace("'", "''").replace("\\", "\\\\")),
-                serde_json::Value::Number(n) => n.to_string(),
-                serde_json::Value::Bool(b) => if *b { "1" } else { "0" }.to_string(),
-                _ => return Err(sqlx::Error::Protocol(
-                    format!("Unsupported value type for field '{}'", field)
-                )),
-            };
-            values.push(sql_value);
-        }
-
-        // Build the UPDATE query
-        let query = format!(
-            "UPDATE {} SET {}, updated_at = NOW() WHERE server_id = {}",
+        DatabaseHelper::update(
+            &self.pool,
             Server::TABLE,
-            set_clauses.join(", ").replace("?", "&"),
-            server_id
-        );
-
-        // Replace placeholders with actual values
-        let mut final_query = query;
-        for value in values {
-            final_query = final_query.replacen("&", &value, 1);
-        }
-
-        // Execute the update
-        let result = sqlx::query(&final_query)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(result.rows_affected() > 0)
+            Server::KEY,
+            server_id,
+            updates,
+            &blacklisted_fields,
+        ).await
     }
 
     /// Create a new server from inventory data

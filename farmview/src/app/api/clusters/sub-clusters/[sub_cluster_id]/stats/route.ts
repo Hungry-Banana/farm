@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { proxyToFarmCore } from '../../../../proxy';
+import { proxyToFarmCore } from '@/app/api/proxy';
 
 // Get sub-cluster statistics
 async function handler(

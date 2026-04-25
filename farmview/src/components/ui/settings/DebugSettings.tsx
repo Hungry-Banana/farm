@@ -77,24 +77,50 @@ const DebugSettings: React.FC = () => {
       </div>
 
       {/* Settings List */}
-      <div className="space-y-4">
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1 pb-2">Search</p>
+
+        <DebugSettingRow
+          title="Search Preview"
+          description="Show a formatted preview of the active search query"
+          checked={settings.showSearchPreview}
+          onChange={(checked) => handleSettingChange('showSearchPreview', checked, 'Search Preview')}
+        />
+
         <DebugSettingRow
           title="Search JSON"
-          description="Display structured JSON sent to backend"
+          description="Display the raw JSON payload sent to the backend"
           checked={settings.showSearchJSON}
           onChange={(checked) => handleSettingChange('showSearchJSON', checked, 'Search JSON')}
         />
-        
+
+        <DebugSettingRow
+          title="Original Criteria"
+          description="Show the unprocessed search criteria before transformation"
+          checked={settings.showOriginalCriteria}
+          onChange={(checked) => handleSettingChange('showOriginalCriteria', checked, 'Original Criteria')}
+        />
+
+        <DebugSettingRow
+          title="Logic Warnings"
+          description="Highlight potential issues in search logic construction"
+          checked={settings.showLogicWarnings}
+          onChange={(checked) => handleSettingChange('showLogicWarnings', checked, 'Logic Warnings')}
+          recommended
+        />
+
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1 pt-4 pb-2">API &amp; Performance</p>
+
         <DebugSettingRow
           title="API Responses"
-          description="Log API responses to browser console"
+          description="Log full API responses to the browser console"
           checked={settings.showAPIResponses}
           onChange={(checked) => handleSettingChange('showAPIResponses', checked, 'API Responses')}
         />
-        
+
         <DebugSettingRow
           title="Performance Metrics"
-          description="Show performance timing information"
+          description="Overlay timing information on data-fetching operations"
           checked={settings.showPerformanceMetrics}
           onChange={(checked) => handleSettingChange('showPerformanceMetrics', checked, 'Performance Metrics')}
         />

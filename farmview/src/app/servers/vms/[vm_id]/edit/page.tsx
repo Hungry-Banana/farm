@@ -29,18 +29,17 @@ export default function VMEditPage() {
                 setFormData({
                     vm_name: vm.vm_name || '',
                     vm_state: vm.vm_state || 'unknown',
-                    vm_status: vm.vm_status || 'unknown',
+                    vm_status: vm.vm_status || 'inactive',
                     hypervisor_type: vm.hypervisor_type || '',
                     guest_os_family: vm.guest_os_family || '',
                     guest_os_version: vm.guest_os_version || '',
-                    guest_os_distribution: vm.guest_os_distribution || '',
+                    guest_os_architecture: vm.guest_os_architecture || '',
                     vcpu_count: vm.vcpu_count || 0,
                     memory_mb: vm.memory_mb || 0,
                     storage_gb: vm.storage_gb || 0,
                     enable_vnc: vm.enable_vnc || false,
                     vnc_port: vm.vnc_port || null,
                     vm_uuid: vm.vm_uuid || '',
-                    instance_uuid: vm.instance_uuid || ''
                 });
             } catch (error) {
                 console.error('Failed to load VM:', error);
@@ -131,28 +130,34 @@ export default function VMEditPage() {
         );
     }
 
+    // vm_state ENUM: 'running', 'stopped', 'paused', 'suspended', 'crashed', 'unknown'
     const stateOptions = [
         { label: 'Running', value: 'running' },
         { label: 'Stopped', value: 'stopped' },
         { label: 'Paused', value: 'paused' },
         { label: 'Suspended', value: 'suspended' },
+        { label: 'Crashed', value: 'crashed' },
         { label: 'Unknown', value: 'unknown' }
     ];
 
+    // vm_status ENUM: 'active', 'inactive', 'maintenance', 'migrating', 'backup', 'error'
     const statusOptions = [
         { label: 'Active', value: 'active' },
         { label: 'Inactive', value: 'inactive' },
-        { label: 'Error', value: 'error' },
-        { label: 'Unknown', value: 'unknown' }
+        { label: 'Maintenance', value: 'maintenance' },
+        { label: 'Migrating', value: 'migrating' },
+        { label: 'Backup', value: 'backup' },
+        { label: 'Error', value: 'error' }
     ];
 
+    // hypervisor_type ENUM: 'KVM', 'VMware', 'VirtualBox', 'Hyper-V', 'Xen', 'QEMU'
     const hypervisorOptions = [
-        { label: 'KVM', value: 'kvm' },
-        { label: 'VMware', value: 'vmware' },
-        { label: 'Xen', value: 'xen' },
-        { label: 'Hyper-V', value: 'hyperv' },
-        { label: 'QEMU', value: 'qemu' },
-        { label: 'Other', value: 'other' }
+        { label: 'KVM', value: 'KVM' },
+        { label: 'VMware', value: 'VMware' },
+        { label: 'VirtualBox', value: 'VirtualBox' },
+        { label: 'Hyper-V', value: 'Hyper-V' },
+        { label: 'Xen', value: 'Xen' },
+        { label: 'QEMU', value: 'QEMU' }
     ];
 
     const osOptions = [
@@ -294,12 +299,12 @@ export default function VMEditPage() {
                                         placeholder: 'e.g., 22.04, Server 2019'
                                     },
                                     { 
-                                        label: 'OS Distribution', 
-                                        value: formData.guest_os_distribution, 
+                                        label: 'OS Architecture', 
+                                        value: formData.guest_os_architecture, 
                                         icon: '', 
-                                        name: 'guest_os_distribution',
+                                        name: 'guest_os_architecture',
                                         type: 'text',
-                                        placeholder: 'e.g., Ubuntu, CentOS, Windows'
+                                        placeholder: 'e.g., x86_64, aarch64'
                                     }
                                 ]}
                                 onChange={handleFieldChange}
@@ -400,14 +405,6 @@ export default function VMEditPage() {
                                         name: 'vm_uuid',
                                         type: 'text',
                                         placeholder: 'VM UUID'
-                                    },
-                                    { 
-                                        label: 'Instance UUID', 
-                                        value: formData.instance_uuid, 
-                                        icon: '', 
-                                        name: 'instance_uuid',
-                                        type: 'text',
-                                        placeholder: 'Instance UUID'
                                     },
                                     { 
                                         label: 'Created At', 

@@ -421,9 +421,31 @@ export default function ServerPage() {
                                     {/* Location & Placement Section */}
                                     <FieldSection fields={[
                                         { label: 'Data Center ID', value: server.data_center_id || '0', icon: '' },
-                                        { label: 'Cluster ID', value: server.cluster_id || '0', icon: '' },
+                                        { 
+                                            label: 'Cluster ID', 
+                                            value: server.cluster_id ? (
+                                                <a 
+                                                    href={`/clusters/${server.cluster_id}`}
+                                                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                                                >
+                                                    {server.cluster_id}
+                                                </a>
+                                            ) : '0',
+                                            icon: '' 
+                                        },
                                         { label: 'Rack ID', value: server.rack_id || '0', icon: '' },
-                                        { label: 'Sub Cluster ID', value: server.sub_cluster_id || '0', icon: '' },
+                                        { 
+                                            label: 'Sub Cluster ID', 
+                                            value: server.sub_cluster_id ? (
+                                                <a 
+                                                    href={`/clusters/sub-clusters/${server.sub_cluster_id}`}
+                                                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                                                >
+                                                    {server.sub_cluster_id}
+                                                </a>
+                                            ) : '0',
+                                            icon: '' 
+                                        },
                                         { label: 'Rack Position', value: server.rack_position_id || '0', icon: '' }
                                     ]} />
 

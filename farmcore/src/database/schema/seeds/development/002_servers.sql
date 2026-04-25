@@ -40,14 +40,14 @@ INSERT IGNORE INTO servers (
 ('prod-web-01', 'x86_64', 'X11DPH-T', 'Supermicro', 'SM001WEB', 
  'Supermicro', 'SM001WEBC',
  'COMPUTE', 'ACTIVE', 'PRODUCTION',
- 2, 1, 2, 5, 20,
+ 2, 4, 2, 5, 20,
  '2025-11-28 06:00:00', '1.6.0'),
 
 -- Production Database Server 1
 ('prod-db-01', 'x86_64', 'X11DPH-T', 'Supermicro', 'SM002DB', 
  'Supermicro', 'SM002DBC',
  'STORAGE', 'ACTIVE', 'PRODUCTION',
- 2, 1, 2, 5, 21,
+ 2, 6, 2, 5, 21,
  '2025-11-28 06:15:00', '1.6.0'),
 
 -- Maintenance Server
