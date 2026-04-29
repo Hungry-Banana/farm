@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 use crate::search::SearchQueryBuilder;
-use crate::models::{QueryOptions, WhereCondition};
+use crate::models::{QueryOptions, QueryValue, WhereCondition};
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct CommonPaginationQuery {
@@ -40,12 +40,34 @@ impl QueryParser {
 
     pub fn parse_search_conditions(
         search: Option<&str>,
-        _filters: &HashMap<String, String>,
+        filters: &HashMap<String, String>,
     ) -> Result<Vec<WhereCondition>, String> {
-        match search {
-            Some(json) => SearchQueryBuilder::build_conditions(json),
-            None => Ok(Vec::new()),
+        let mut conditions = match search {
+            Some(json) => SearchQueryBuilder::build_conditions(json)?,
+            None => Vec::new(),
+        };
+
+        // Turn remaining query params (e.g. sub_cluster_id=1&cluster_id=2) into WHERE conditions.
+        // Known pagination/control keys are excluded.
+        let skip = ["page", "per_page", "columns", "search"];
+        for (key, value) in filters {
+            if skip.contains(&key.as_str()) {
+                continue;
+            }
+            let qv = if let Ok(i) = value.parse::<i64>() {
+                QueryValue::Integer(i)
+            } else {
+                QueryValue::String(value.clone())
+            };
+            conditions.push(WhereCondition {
+                column: key.clone(),
+                operator: "=".to_string(),
+                value: qv,
+                logical_operator: Some("AND".to_string()),
+            });
         }
+
+        Ok(conditions)
     }
 
     pub fn create_query_options(
