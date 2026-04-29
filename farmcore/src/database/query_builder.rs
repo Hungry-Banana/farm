@@ -55,6 +55,23 @@ impl QueryBuilderHelper {
         qb.build_query_as::<T>().fetch_all(pool).await
     }
 
+    /// Count rows matching the given WHERE conditions (for pagination metadata)
+    pub async fn count(
+        pool: &MySqlPool,
+        table_name: &str,
+        where_conditions: &[crate::models::WhereCondition],
+    ) -> Result<i64, sqlx::Error> {
+        let mut qb = QueryBuilder::<MySql>::new("SELECT COUNT(*) FROM `");
+        qb.push(table_name).push("`");
+
+        if !where_conditions.is_empty() {
+            qb.push(" WHERE ");
+            Self::add_where_conditions(&mut qb, where_conditions);
+        }
+
+        qb.build_query_scalar::<i64>().fetch_one(pool).await
+    }
+
     /// Helper function to add WHERE conditions to a query builder
     fn add_where_conditions<'a>(qb: &mut QueryBuilder<'a, MySql>, where_conditions: &'a [WhereCondition]) {
         for (i, condition) in where_conditions.iter().enumerate() {

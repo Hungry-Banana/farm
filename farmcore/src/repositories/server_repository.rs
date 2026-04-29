@@ -157,7 +157,7 @@ pub struct GpuInfo {
 
 #[async_trait]
 pub trait ServerRepo: Send + Sync {
-    async fn get_all_servers(&self, query: CommonPaginationQuery) -> Result<Vec<Server>, sqlx::Error>;
+    async fn get_all_servers(&self, query: CommonPaginationQuery) -> Result<(Vec<Server>, i64), sqlx::Error>;
     async fn get_by_id(&self, id: i64) -> Result<Option<Server>, sqlx::Error>;
     async fn get_server_with_all_components(&self, server_id: i32) -> Result<Option<ServerWithAllComponents>, sqlx::Error>;
     async fn get_overview_stats(&self) -> Result<serde_json::Value, sqlx::Error>;
@@ -182,11 +182,13 @@ impl ServerRepository {
     }
 
     /// Get all servers with pagination
-    pub async fn get_all_servers(&self, query: CommonPaginationQuery) -> Result<Vec<Server>, sqlx::Error> {
+    pub async fn get_all_servers(&self, query: CommonPaginationQuery) -> Result<(Vec<Server>, i64), sqlx::Error> {
         let (_, per_page, offset, columns, where_conditions, _) = QueryParser::parse_all(
             &query,
             Some("server_id DESC".to_string())
         ).map_err(|e| sqlx::Error::Protocol(format!("Query parsing error: {}", e)))?;
+
+        let total_count = QueryBuilderHelper::count(&self.pool, Server::TABLE, &where_conditions).await?;
 
         let options = QueryOptions {
             columns,
@@ -196,7 +198,8 @@ impl ServerRepository {
             order_by: Some("server_id DESC".to_string()),
         };
 
-        QueryBuilderHelper::select(&self.pool, Server::TABLE, options).await
+        let servers = QueryBuilderHelper::select(&self.pool, Server::TABLE, options).await?;
+        Ok((servers, total_count))
     }
 
     /// Find server by ID
@@ -1679,7 +1682,7 @@ impl ServerRepository {
 
 #[async_trait]
 impl ServerRepo for ServerRepository {
-    async fn get_all_servers(&self, query: CommonPaginationQuery) -> Result<Vec<Server>, sqlx::Error> {
+    async fn get_all_servers(&self, query: CommonPaginationQuery) -> Result<(Vec<Server>, i64), sqlx::Error> {
         ServerRepository::get_all_servers(self, query).await
     }
 

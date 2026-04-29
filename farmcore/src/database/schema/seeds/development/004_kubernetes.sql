@@ -5,7 +5,7 @@
 -- ===================================================================
 -- KUBERNETES CLUSTERS
 -- ===================================================================
-INSERT INTO kubernetes_clusters (
+INSERT IGNORE INTO kubernetes_clusters (
     cluster_id, cluster_name, cluster_uuid, description,
     cluster_version, api_server_endpoint, cluster_domain,
     distribution, distribution_version,
@@ -68,7 +68,7 @@ INSERT INTO kubernetes_clusters (
 -- ===================================================================
 -- KUBERNETES NODE GROUPS
 -- ===================================================================
-INSERT INTO kubernetes_node_groups (
+INSERT IGNORE INTO kubernetes_node_groups (
     node_group_id, cluster_id, node_group_name, node_group_uuid, description,
     node_group_type, min_nodes, max_nodes, desired_nodes, current_nodes,
     auto_scaling_enabled, node_instance_type, node_image, node_disk_size_gb,
@@ -129,7 +129,7 @@ INSERT INTO kubernetes_node_groups (
 -- ===================================================================
 -- KUBERNETES NODES
 -- ===================================================================
-INSERT INTO kubernetes_nodes (
+INSERT IGNORE INTO kubernetes_nodes (
     k8s_node_id, cluster_id, node_group_id, server_id, vm_id,
     node_name, node_uuid, node_uid,
     node_type, internal_ip, external_ip, hostname,
@@ -303,7 +303,7 @@ INSERT INTO kubernetes_nodes (
 -- ===================================================================
 -- KUBERNETES NAMESPACES
 -- ===================================================================
-INSERT INTO kubernetes_namespaces (
+INSERT IGNORE INTO kubernetes_namespaces (
     namespace_id, cluster_id, namespace_name, namespace_uid, description,
     namespace_state, resource_quota_enabled,
     cpu_limit, memory_limit, storage_limit, pod_limit, service_limit,
@@ -357,7 +357,7 @@ INSERT INTO kubernetes_namespaces (
 -- ===================================================================
 -- KUBERNETES WORKLOADS
 -- ===================================================================
-INSERT INTO kubernetes_workloads (
+INSERT IGNORE INTO kubernetes_workloads (
     workload_id, cluster_id, namespace_id, workload_name, workload_uid,
     workload_type, replicas_desired, replicas_current, replicas_ready, replicas_available, replicas_updated,
     container_image, container_images,
@@ -455,7 +455,7 @@ INSERT INTO kubernetes_workloads (
 -- ===================================================================
 -- KUBERNETES PODS
 -- ===================================================================
-INSERT INTO kubernetes_pods (
+INSERT IGNORE INTO kubernetes_pods (
     pod_id, cluster_id, namespace_id, workload_id, k8s_node_id,
     pod_name, pod_uid, pod_ip, host_ip,
     pod_phase, pod_state, is_ready,
@@ -513,7 +513,7 @@ INSERT INTO kubernetes_pods (
 -- ===================================================================
 -- KUBERNETES SERVICES
 -- ===================================================================
-INSERT INTO kubernetes_services (
+INSERT IGNORE INTO kubernetes_services (
     service_id, cluster_id, namespace_id, service_name, service_uid,
     service_type, cluster_ip, external_ips, load_balancer_ip,
     ports, session_affinity, external_traffic_policy,
@@ -573,7 +573,7 @@ INSERT INTO kubernetes_services (
 -- ===================================================================
 -- KUBERNETES INGRESSES
 -- ===================================================================
-INSERT INTO kubernetes_ingresses (
+INSERT IGNORE INTO kubernetes_ingresses (
     ingress_id, cluster_id, namespace_id, ingress_name, ingress_uid,
     ingress_class, rules, tls_config, load_balancer_ingress,
     labels, annotations, created_by
@@ -602,7 +602,7 @@ INSERT INTO kubernetes_ingresses (
 -- ===================================================================
 -- KUBERNETES EVENTS
 -- ===================================================================
-INSERT INTO kubernetes_events (
+INSERT IGNORE INTO kubernetes_events (
     event_id, cluster_id, namespace_id, event_name, event_uid,
     event_type, reason, message,
     involved_object_kind, involved_object_name, involved_object_uid,
@@ -656,7 +656,7 @@ INSERT INTO kubernetes_events (
 -- ===================================================================
 -- KUBERNETES METRICS
 -- ===================================================================
-INSERT INTO kubernetes_metrics (
+INSERT IGNORE INTO kubernetes_metrics (
     metric_id, cluster_id, resource_type, resource_id, resource_name,
     cpu_usage_cores, cpu_usage_percent, cpu_request_cores, cpu_limit_cores,
     memory_usage_bytes, memory_usage_mb, memory_usage_percent, memory_request_mb, memory_limit_mb,
@@ -763,7 +763,7 @@ INSERT INTO kubernetes_metrics (
 -- ===================================================================
 -- KUBERNETES SECRETS
 -- ===================================================================
-INSERT INTO kubernetes_secrets (
+INSERT IGNORE INTO kubernetes_secrets (
     secret_id, cluster_id, namespace_id, secret_name, secret_uid,
     secret_type, data_keys, data_size_bytes, is_immutable,
     labels, annotations, created_by
@@ -809,7 +809,7 @@ INSERT INTO kubernetes_secrets (
 -- ===================================================================
 -- KUBERNETES CONFIGMAPS
 -- ===================================================================
-INSERT INTO kubernetes_configmaps (
+INSERT IGNORE INTO kubernetes_configmaps (
     configmap_id, cluster_id, namespace_id, configmap_name, configmap_uid,
     data_keys, binary_data_keys, data_size_bytes, is_immutable,
     labels, annotations, created_by

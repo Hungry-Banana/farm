@@ -8,6 +8,7 @@ import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import FieldSection from "@/components/ui/FieldSection";
 import TableSection from "@/components/ui/table/TableSection";
 import { TabContainer, TabDefinition } from "@/components/ui/tab/TabContainer";
+import SwitchActionsDropdown from "@/components/ui/Buttons/SwitchActionButton";
 
 // -------------------------------------------------------
 // Status / role colour helpers
@@ -290,6 +291,9 @@ export default function SwitchDetailPage() {
                 )}
               </div>
             </div>
+          </div>
+          <div>
+            <SwitchActionsDropdown switchId={switchId} />
           </div>
         </div>
 

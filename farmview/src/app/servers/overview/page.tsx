@@ -1,476 +1,249 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
-import TableSection from "@/components/ui/table/TableSection";
 import { getServers, getServerOverview } from "@/lib/servers";
+import TableSection from "@/components/ui/table/TableSection";
+import ServerCellContent from "@/components/ui/table/ServerCellContent";
+import {
+  PieChart, Pie, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LabelList,
+  ResponsiveContainer,
+} from "recharts";
 
-// Status colors mapping
-const statusColors = {
-  ACTIVE: "text-green-500 bg-green-500/10 border-green-500/20",
-  MAINTENANCE: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20", 
-  INACTIVE: "text-red-500 bg-red-500/10 border-red-500/20",
-  OFFLINE: "text-gray-500 bg-gray-500/10 border-gray-500/20"
+// ── Colour maps ───────────────────────────────────────────────────────────────
+const STATUS_CSS: Record<string, string> = {
+  ACTIVE:         "text-green-500 bg-green-500/10 border-green-500/20",
+  INACTIVE:       "text-red-500 bg-red-500/10 border-red-500/20",
+  MAINTENANCE:    "text-yellow-500 bg-yellow-500/10 border-yellow-500/20",
+  RMA:            "text-purple-500 bg-purple-500/10 border-purple-500/20",
+  DECOMMISSIONED: "text-gray-400 bg-gray-400/10 border-gray-400/20",
 };
 
-// Environment colors mapping
-const environmentColors = {
-  production: "text-red-500 bg-red-500/10 border-red-500/20",
-  prod: "text-red-500 bg-red-500/10 border-red-500/20",
-  staging: "text-amber-500 bg-amber-500/10 border-amber-500/20",
-  stage: "text-amber-500 bg-amber-500/10 border-amber-500/20",
-  development: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
-  dev: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
-  testing: "text-purple-500 bg-purple-500/10 border-purple-500/20",
-  test: "text-purple-500 bg-purple-500/10 border-purple-500/20",
-  integration: "text-blue-500 bg-blue-500/10 border-blue-500/20",
-  unknown: "text-gray-500 bg-gray-500/10 border-gray-500/20"
+const STATUS_CHART_COLORS: Record<string, string> = {
+  ACTIVE: "#10B981", Active: "#10B981", active: "#10B981",
+  INACTIVE: "#EF4444", Inactive: "#EF4444", inactive: "#EF4444",
+  MAINTENANCE: "#F59E0B", Maintenance: "#F59E0B", maintenance: "#F59E0B",
+  RMA: "#8B5CF6", Rma: "#8B5CF6", rma: "#8B5CF6",
+  DECOMMISSIONED: "#6B7280", Decommissioned: "#6B7280",
 };
 
-interface ServerOverviewStats {
-  total_servers: number;
-  active_servers: number;
-  inactive_servers: number;
-  maintenance_servers: number;
-  by_server_type: Array<{ name: string; count: number }>;
-  by_status: Array<{ name: string; count: number }>;
-  by_environment: Array<{ name: string; count: number }>;
-  total_cpu_cores?: number;
-  total_ram_gb?: number;
-  total_storage_gb?: number;
+const ENV_CHART_COLORS: Record<string, string> = {
+  PRODUCTION: "#DC2626", Production: "#DC2626", production: "#DC2626",
+  DEVELOPMENT: "#059669", Development: "#059669", development: "#059669",
+  STAGING: "#F59E0B", Staging: "#F59E0B", staging: "#F59E0B",
+  TESTING: "#7C3AED", Testing: "#7C3AED", testing: "#7C3AED",
+  QA: "#2563EB", Qa: "#2563EB", qa: "#2563EB",
+};
+
+const TYPE_CHART_COLORS: Record<string, string> = {
+  BAREMETAL: "#3B82F6", Baremetal: "#3B82F6",
+  HOST: "#10B981", Host: "#10B981",
+  STORAGE: "#F59E0B", Storage: "#F59E0B",
+  COMPUTE: "#8B5CF6", Compute: "#8B5CF6",
+};
+
+const CHART_COLORS = ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#3B82F6", "#8B5CF6", "#EC4899"];
+
+// ── Tooltip styles ────────────────────────────────────────────────────────────
+const tooltipStyle      = { backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "6px", fontSize: "12px", color: "#f1f5f9" };
+const tooltipItemStyle  = { color: "#f1f5f9" };
+const tooltipLabelStyle = { color: "#cbd5e1" };
+
+// ── Normalise data arrays (objects or [name,count] tuples) ────────────────────
+function normalize(arr: any[]): { name: string; value: number }[] {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((item) => ({
+    name:  (Array.isArray(item) ? item[0] : item.name)  ?? "Unknown",
+    value: (Array.isArray(item) ? item[1] : item.count) ?? 0,
+  }));
 }
 
+// ── Donut chart ───────────────────────────────────────────────────────────────
+function DonutChart({ title, data, colorMap }: { title: string; data: { name: string; value: number }[]; colorMap?: Record<string, string> }) {
+  const filled = data.map((d, i) => ({
+    ...d,
+    fill: colorMap?.[d.name] ?? colorMap?.[d.name.toUpperCase()] ?? colorMap?.[d.name.toLowerCase()] ?? CHART_COLORS[i % CHART_COLORS.length],
+  }));
+  const total = filled.reduce((s, d) => s + d.value, 0);
+  return (
+    <div className="rounded-theme border border-island_border bg-island_background p-5">
+      <h3 className="text-sm font-semibold text-foreground mb-1">{title}</h3>
+      <p className="text-xs text-muted-foreground mb-3">Total: {total.toLocaleString()}</p>
+      {total === 0 ? (
+        <div className="flex items-center justify-center h-44 text-muted-foreground text-sm">No data</div>
+      ) : (
+        <ResponsiveContainer width="100%" height={210}>
+          <PieChart>
+            <Pie data={filled} cx="50%" cy="45%" innerRadius={50} outerRadius={76} paddingAngle={2} dataKey="value">
+              {filled.map((entry, i) => <Cell key={i} fill={entry.fill} strokeWidth={0} />)}
+            </Pie>
+            <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} wrapperStyle={{ outline: "none" }} />
+            <Legend iconSize={10} formatter={(v) => <span className="text-xs text-foreground">{v}</span>} />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
+// ── Horizontal bar chart ──────────────────────────────────────────────────────
+function HBarChart({ title, data, colors = CHART_COLORS }: { title: string; data: { name: string; value: number }[]; colors?: string[] }) {
+  return (
+    <div className="rounded-theme border border-island_border bg-island_background p-5">
+      <h3 className="text-sm font-semibold text-foreground mb-1">{title}</h3>
+      <p className="text-xs text-muted-foreground mb-3">{data.length} {data.length === 1 ? "category" : "categories"}</p>
+      {data.length === 0 ? (
+        <div className="flex items-center justify-center h-44 text-muted-foreground text-sm">No data</div>
+      ) : (
+        <ResponsiveContainer width="100%" height={Math.max(160, data.length * 40)}>
+          <BarChart layout="vertical" data={data} margin={{ left: 4, right: 48, top: 4, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(127,127,127,0.15)" horizontal={false} />
+            <XAxis type="number" tick={{ fontSize: 11, fill: "rgba(127,127,127,0.8)" }} allowDecimals={false} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "rgba(127,127,127,0.8)" }} width={100} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} wrapperStyle={{ outline: "none" }} cursor={{ fill: "rgba(148,163,184,0.08)" }} />
+            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+              <LabelList dataKey="value" position="right" style={{ fontSize: 11, fill: "rgba(127,127,127,0.8)" }} />
+              {data.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function ServersOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [servers, setServers] = useState<any[]>([]);
-  const [overviewStats, setOverviewStats] = useState<ServerOverviewStats>({
-    total_servers: 0,
-    active_servers: 0,
-    inactive_servers: 0,
-    maintenance_servers: 0,
-    by_server_type: [],
-    by_status: [],
-    by_environment: [],
-    total_cpu_cores: 0,
-    total_ram_gb: 0,
-    total_storage_gb: 0
-  });
+  const [stats, setStats] = useState<any>({});
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [serversData, statsData] = await Promise.all([
-          getServers(),
-          getServerOverview()
-        ]);
-        
+        const [serversData, statsData] = await Promise.all([getServers(), getServerOverview()]);
         setServers(serversData || []);
-        setOverviewStats(statsData || {
-          total_servers: 0,
-          active_servers: 0,
-          inactive_servers: 0,
-          maintenance_servers: 0,
-          by_server_type: [],
-          by_status: [],
-          by_environment: [],
-          total_cpu_cores: 0,
-          total_ram_gb: 0,
-          total_storage_gb: 0
-        });
+        setStats(statsData || {});
       } catch (error) {
-        console.error('Failed to load server data:', error);
+        console.error("Failed to load server overview:", error);
       } finally {
         setLoading(false);
       }
     }
-
     loadData();
   }, []);
 
-  // Prepare pie chart data from server status distribution
-  const preparePieChartData = () => {
-    if (overviewStats.by_status && overviewStats.by_status.length > 0) {
-      return overviewStats.by_status.map((item) => {
-        let color = '#6B7280'; // default gray
-        switch (item.name.toLowerCase()) {
-          case 'active':
-            color = '#10B981'; // green
-            break;
-          case 'maintenance':
-            color = '#F59E0B'; // yellow
-            break;
-          case 'inactive':
-          case 'offline':
-            color = '#EF4444'; // red
-            break;
-        }
-        
-        return {
-          name: item.name.charAt(0).toUpperCase() + item.name.slice(1),
-          value: item.count,
-          color: color
-        };
-      });
-    }
+  // ── Derived chart data ─────────────────────────────────────────────────────
+  const byStatus  = normalize(stats.by_status ?? []);
+  const byEnv     = normalize(stats.by_environment ?? []);
+  const byType    = normalize(stats.by_server_type ?? []);
 
-    // Fallback to calculate from servers array if no by_status data
-    const statusCounts = servers.reduce((acc: any, server: any) => {
-      const status = server.status || 'unknown';
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {});
+  const storageGb = stats.total_storage_gb ?? 0;
+  const storageFmt = storageGb >= 1024
+    ? `${(storageGb / 1024).toFixed(1)} TB`
+    : `${Math.round(storageGb)} GB`;
 
-    return Object.entries(statusCounts).map(([status, count]) => {
-      let color = '#6B7280';
-      switch (status.toLowerCase()) {
-        case 'active':
-          color = '#10B981';
-          break;
-        case 'maintenance':
-          color = '#F59E0B';
-          break;
-        case 'inactive':
-        case 'offline':
-          color = '#EF4444';
-          break;
-      }
-      
-      return {
-        name: status.charAt(0).toUpperCase() + status.slice(1),
-        value: count as number,
-        color: color
-      };
-    });
-  };
-
-  // Prepare environment pie chart data
-  const prepareEnvironmentPieChartData = () => {
-    if (overviewStats.by_environment && overviewStats.by_environment.length > 0) {
-      return overviewStats.by_environment.map((item) => {
-        let color = '#6B7280'; // default gray
-        switch (item.name.toLowerCase()) {
-          case 'production':
-          case 'prod':
-            color = '#DC2626'; // red for production
-            break;
-          case 'staging':
-          case 'stage':
-            color = '#F59E0B'; // amber for staging
-            break;
-          case 'development':
-          case 'dev':
-            color = '#059669'; // emerald for dev
-            break;
-          case 'testing':
-          case 'test':
-            color = '#7C3AED'; // purple for testing
-            break;
-          case 'integration':
-            color = '#2563EB'; // blue for integration
-            break;
-          default:
-            color = '#6B7280'; // gray for others
-        }
-        
-        return {
-          name: item.name.charAt(0).toUpperCase() + item.name.slice(1),
-          value: item.count,
-          color: color
-        };
-      });
-    }
-
-    // Fallback to calculate from servers array if no by_environment data
-    const environmentCounts = servers.reduce((acc: any, server: any) => {
-      const environment = server.environment_type || 'unknown';
-      acc[environment] = (acc[environment] || 0) + 1;
-      return acc;
-    }, {});
-
-    return Object.entries(environmentCounts).map(([environment, count]) => {
-      let color = '#6B7280';
-      switch (environment.toLowerCase()) {
-        case 'production':
-        case 'prod':
-          color = '#DC2626';
-          break;
-        case 'staging':
-        case 'stage':
-          color = '#F59E0B';
-          break;
-        case 'development':
-        case 'dev':
-          color = '#059669';
-          break;
-        case 'testing':
-        case 'test':
-          color = '#7C3AED';
-          break;
-        case 'integration':
-          color = '#2563EB';
-          break;
-        default:
-          color = '#6B7280';
-      }
-      
-      return {
-        name: environment.charAt(0).toUpperCase() + environment.slice(1),
-        value: count as number,
-        color: color
-      };
-    });
-  };
-
-  // Prepare server type pie chart data
-  const prepareServerTypePieChartData = () => {
-    if (overviewStats.by_server_type && overviewStats.by_server_type.length > 0) {
-      return overviewStats.by_server_type.map((item) => {
-        let color = '#6B7280';
-        switch (item.name.toUpperCase()) {
-          case 'BAREMETAL':
-            color = '#3B82F6'; // blue
-            break;
-          case 'HOST':
-            color = '#10B981'; // green
-            break;
-          case 'STORAGE':
-            color = '#F59E0B'; // amber
-            break;
-          case 'COMPUTE':
-            color = '#8B5CF6'; // purple
-            break;
-          default:
-            color = '#6B7280'; // gray for unknown
-        }
-        
-        return {
-          name: item.name.charAt(0).toUpperCase() + item.name.slice(1).toLowerCase(),
-          value: item.count,
-          color: color
-        };
-      });
-    }
-
-    // Fallback to calculate from servers array
-    const typeCounts = servers.reduce((acc: any, server: any) => {
-      const serverType = server.server_type || 'unknown';
-      acc[serverType] = (acc[serverType] || 0) + 1;
-      return acc;
-    }, {});
-
-    return Object.entries(typeCounts).map(([type, count]) => {
-      let color = '#6B7280';
-      switch (type.toUpperCase()) {
-        case 'BAREMETAL':
-          color = '#3B82F6'; // blue
-          break;
-        case 'HOST':
-          color = '#10B981'; // green
-          break;
-        case 'STORAGE':
-          color = '#F59E0B'; // amber
-          break;
-        case 'COMPUTE':
-          color = '#8B5CF6'; // purple
-          break;
-        default:
-          color = '#6B7280'; // gray for unknown
-      }
-      
-      return {
-        name: type.charAt(0).toUpperCase() + type.slice(1).toLowerCase(),
-        value: count as number,
-        color: color
-      };
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="container mx-auto ">
-        <Breadcrumb />
-        <div className="rounded-theme border border-island_border bg-island_background p-6 text-center">
-          <div className="text-2xl mb-4">⏳</div>
-          <p className="text-foreground">Loading server overview...</p>
-        </div>
-      </div>
-    );
-  }
+  const recentServers = [...servers]
+    .sort((a, b) => b.server_id - a.server_id)
+    .slice(0, 12);
 
   return (
-    <div className="container mx-auto ">
+    <div className="space-y-6">
       <Breadcrumb />
-      
-      <div className="grid gap-5">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Servers Overview</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Monitor and manage your server infrastructure
-            </p>
-          </div>
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Servers Overview</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Health, capacity and inventory across all servers
+          </p>
         </div>
-
-        {/* Server Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-theme border border-island_border bg-island_background p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Servers</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {overviewStats.total_servers || servers.length}
-                </p>
-              </div>
-              <div className="text-2xl">🖥️</div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {overviewStats.active_servers || servers.filter(s => s.status?.toLowerCase() === 'active').length} active
-            </p>
-          </div>
-
-          <div className="rounded-theme border border-island_border bg-island_background p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total CPU Cores</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {overviewStats.total_cpu_cores || 0}
-                </p>
-              </div>
-              <div className="text-2xl">🧠</div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">Across all servers</p>
-          </div>
-
-          <div className="rounded-theme border border-island_border bg-island_background p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total RAM</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {overviewStats.total_ram_gb || 0} GB
-                </p>
-              </div>
-              <div className="text-2xl">💾</div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">Across all servers</p>
-          </div>
-
-          <div className="rounded-theme border border-island_border bg-island_background p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Storage</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {Math.round((overviewStats.total_storage_gb || 0) / 1024)} TB
-                </p>
-              </div>
-              <div className="text-2xl">🗄️</div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">Across all servers</p>
-          </div>
-        </div>
-
-        {/* Servers Table */}
-        <div className="rounded-theme border border-island_border bg-island_background p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-foreground">Recent Servers</h2>
-            <span className="text-sm text-muted-foreground">
-              {servers.length} servers found
-            </span>
-          </div>
-
-          {servers.length > 0 ? (
-            <TableSection
-              columns={[
-                {
-                  key: 'server',
-                  label: 'Server',
-                  render: (value, server) => (
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">🖥️</span>
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {server.server_name || `Server ${server.server_id}`}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          ID: {server.server_id}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                },
-                {
-                  key: 'manufacturer',
-                  label: 'Manufacturer',
-                  render: (value) => (
-                    <span className="font-mono text-sm text-foreground">
-                      {value || 'N/A'}
-                    </span>
-                  )
-                },
-                {
-                  key: 'status',
-                  label: 'Status',
-                  render: (value) => (
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-theme text-xs font-medium border ${statusColors[value as keyof typeof statusColors] || 'text-gray-500 bg-gray-500/10 border-gray-500/20'}`}>
-                      {value || 'unknown'}
-                    </span>
-                  )
-                },
-                {
-                  key: 'environment_type',
-                  label: 'Environment',
-                  render: (value) => (
-                    <span className={`inline-flex items-center px-2 py-1 rounded-theme text-xs font-medium border ${environmentColors[value?.toLowerCase() as keyof typeof environmentColors] || environmentColors.unknown}`}>
-                      {value || 'Unknown'}
-                    </span>
-                  )
-                },
-              ]}
-              data={servers.slice(0, 10)}
-              keyField="server_id"
-              searchable={false}
-            />
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <div className="text-4xl mb-4">�️</div>
-              <p>No servers found</p>
-            </div>
-          )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="rounded-theme border border-island_border bg-island_background p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-2xl">🖥️</span>
-              <h3 className="font-medium text-foreground">Manage Servers</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Configure server settings, resources, and maintenance
-            </p>
-          </div>
-
-          <div className="rounded-theme border border-island_border bg-island_background p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-2xl">🗄️</span>
-              <h3 className="font-medium text-foreground">Storage Management</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Manage disks, backups, and storage allocation
-            </p>
-          </div>
-
-          <div className="rounded-theme border border-island_border bg-island_background p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-2xl">💾</span>
-              <h3 className="font-medium text-foreground">Resource Monitoring</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              View real-time CPU, RAM, and storage usage
-            </p>
-          </div>
-        </div>
+        <Link href="/servers" className="text-sm text-primary hover:underline">
+          View all servers →
+        </Link>
       </div>
+
+      {loading ? (
+        <div className="rounded-theme border border-island_border bg-island_background p-16 text-center text-muted-foreground">
+          Loading server overview…
+        </div>
+      ) : (
+        <>
+          {/* ── Hero stat cards ──────────────────────────────────────────── */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[
+              { label: "Total Servers",  value: (stats.total_servers ?? servers.length).toLocaleString(), sub: `${stats.active_servers ?? 0} active`, subColor: "text-green-500" },
+              { label: "Active",         value: (stats.active_servers ?? 0).toLocaleString(), sub: "running normally", subColor: "text-green-500" },
+              { label: "Inactive",       value: (stats.inactive_servers ?? 0).toLocaleString(), sub: `${stats.maintenance_servers ?? 0} in maintenance`, subColor: "text-yellow-500" },
+              { label: "CPU Cores",      value: (stats.total_cpu_cores ?? 0).toLocaleString(), sub: "across all servers" },
+              { label: "Total RAM",      value: `${Math.round(stats.total_ram_gb ?? 0).toLocaleString()} GB`, sub: "installed memory" },
+              { label: "Total Storage",  value: storageFmt, sub: "across all servers" },
+            ].map(({ label, value, sub, subColor }) => (
+              <div key={label} className="rounded-theme border border-island_border bg-island_background p-5">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">{label}</p>
+                <p className="text-2xl font-bold text-foreground">{value}</p>
+                {sub && <p className={`text-xs mt-2 ${subColor ?? "text-muted-foreground"}`}>{sub}</p>}
+              </div>
+            ))}
+          </div>
+
+          {/* ── Charts row ───────────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <DonutChart title="Server Status" data={byStatus} colorMap={STATUS_CHART_COLORS} />
+            <DonutChart title="Environment Distribution" data={byEnv} colorMap={ENV_CHART_COLORS} />
+            <HBarChart  title="Server Types" data={byType} colors={Object.values(TYPE_CHART_COLORS)} />
+          </div>
+
+          {/* ── Recent servers table ─────────────────────────────────────── */}
+          <div className="rounded-theme border border-island_border bg-island_background">
+            <div className="flex items-center justify-between p-5 border-b border-island_border">
+              <h2 className="text-sm font-semibold text-foreground">Recent Servers</h2>
+              <span className="text-xs text-muted-foreground">{servers.length} total</span>
+            </div>
+            <div className="p-5">
+              <TableSection
+                columns={[
+                  { key: "server_name", label: "Server",      render: (v, item) => <ServerCellContent columnKey="server_name"      value={v}    item={item} /> },
+                  { key: "manufacturer", label: "Manufacturer", render: (v, item) => <ServerCellContent columnKey="manufacturer"     value={v}    item={item} /> },
+                  { key: "server_type",  label: "Type",         render: (v, item) => <ServerCellContent columnKey="server_type"      value={v}    item={item} /> },
+                  { key: "status",       label: "Status",       render: (v, item) => <ServerCellContent columnKey="status"           value={v}    item={item} /> },
+                  { key: "environment_type", label: "Environment", render: (v, item) => <ServerCellContent columnKey="environment_type" value={v} item={item} /> },
+                  { key: "state",        label: "State",        render: (v, item) => <ServerCellContent columnKey="state"            value={v}    item={item} /> },
+                ]}
+                data={recentServers}
+                keyField="server_id"
+                searchable={false}
+              />
+            </div>
+          </div>
+
+          {/* ── Quick navigation ─────────────────────────────────────────── */}
+          <div>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Quick Access</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { title: "All Servers",    desc: "Browse the full server list",      icon: "🖥️", href: "/servers" },
+                { title: "Virtual Machines", desc: "Manage VMs across hypervisors",  icon: "💻", href: "/servers/vms" },
+                { title: "VM Overview",    desc: "VM analytics and breakdown",        icon: "📈", href: "/servers/vms/overview" },
+                { title: "Clusters",       desc: "Server cluster groupings",          icon: "🗄️", href: "/clusters" },
+              ].map(({ title, desc, icon, href }) => (
+                <Link key={href} href={href}
+                  className="flex items-start gap-3 p-4 rounded-theme border border-island_border bg-island_background hover:bg-accent/30 transition-colors">
+                  <span className="text-xl mt-0.5 shrink-0">{icon}</span>
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground text-sm">{title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
+

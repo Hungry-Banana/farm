@@ -1,9 +1,9 @@
 use actix_web::{get, post, put, web, HttpResponse, Responder};
 use std::collections::HashMap;
 
-use crate::api::responses::ApiResponse;
+use crate::api::responses::{ApiResponse, ApiMeta, PaginationMeta};
 use crate::api::documentation::*;
-use crate::api::query_parser::CommonPaginationQuery;
+use crate::api::query_parser::{CommonPaginationQuery, QueryParser};
 use crate::state::AppState;
 use crate::domain::bmc::RedfishClient;
 
@@ -170,14 +170,36 @@ pub async fn get_all_servers(
     app_state: web::Data<AppState>, 
     query: web::Query<CommonPaginationQuery>
 ) -> impl Responder {
+    let pagination = QueryParser::parse_pagination(&query);
+    let (page, per_page, _) = match pagination {
+        Ok(p) => p,
+        Err(e) => {
+            let response = ApiResponse::<()>::error("INVALID_PARAMS", &e);
+            return HttpResponse::BadRequest().json(response);
+        }
+    };
+
     match app_state.server_repo().get_all_servers(query.into_inner()).await {
-        Ok(servers) => {
-            let response = ApiResponse::success(servers);
+        Ok((servers, total_count)) => {
+            let total_pages = (total_count + per_page - 1) / per_page;
+            let meta = ApiMeta {
+                pagination: Some(PaginationMeta {
+                    current_page: page,
+                    per_page,
+                    total_count,
+                    total_pages,
+                    has_next: page < total_pages,
+                    has_prev: page > 1,
+                }),
+                filters_applied: None,
+                request_id: None,
+                timestamp: chrono::Utc::now(),
+            };
+            let response = ApiResponse::success_with_meta(servers, meta);
             HttpResponse::Ok().json(response)
         },
         Err(e) => {
             log::error!("Database error fetching servers: {}", e);
-            
             let response = ApiResponse::<()>::error(
                 "DATABASE_ERROR",
                 "Failed to fetch servers"

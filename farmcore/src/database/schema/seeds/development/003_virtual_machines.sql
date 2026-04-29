@@ -4,7 +4,7 @@
 -- ===================================================================
 -- VIRTUAL MACHINES
 -- ===================================================================
-INSERT INTO virtual_machines (
+INSERT IGNORE INTO virtual_machines (
     vm_id, server_id, vm_name, vm_uuid, description,
     hypervisor_type, guest_os_family, guest_os_version, guest_os_architecture,
     vcpu_count, memory_mb, storage_gb,
@@ -145,7 +145,7 @@ INSERT INTO virtual_machines (
 -- ===================================================================
 -- VM VIRTUAL DISKS
 -- ===================================================================
-INSERT INTO vm_disks (
+INSERT IGNORE INTO vm_disks (
     vm_id, disk_name, disk_uuid, description,
     disk_type, disk_format, disk_size_gb, disk_path,
     storage_pool, storage_type,
@@ -201,7 +201,7 @@ INSERT INTO vm_disks (
 -- ===================================================================
 -- VM NETWORK INTERFACES
 -- ===================================================================
-INSERT INTO vm_network_interfaces (
+INSERT IGNORE INTO vm_network_interfaces (
     vm_id, interface_name, interface_uuid, description,
     mac_address, ip_address, netmask, gateway,
     interface_type, network_bridge, vlan_id,
@@ -251,7 +251,7 @@ INSERT INTO vm_network_interfaces (
 -- ===================================================================
 -- VM SNAPSHOTS
 -- ===================================================================
-INSERT INTO vm_snapshots (
+INSERT IGNORE INTO vm_snapshots (
     vm_id, snapshot_name, snapshot_uuid, description,
     snapshot_type, include_memory,
     snapshot_state,
@@ -298,7 +298,7 @@ INSERT INTO vm_snapshots (
 -- ===================================================================
 -- VM RESOURCE USAGE
 -- ===================================================================
-INSERT INTO vm_resource_usage (
+INSERT IGNORE INTO vm_resource_usage (
     vm_id,
     cpu_usage_percent, cpu_time_seconds,
     memory_used_mb, memory_available_mb, memory_cached_mb,
@@ -321,7 +321,7 @@ INSERT INTO vm_resource_usage (
 -- ===================================================================
 -- VM CONFIGURATION HISTORY
 -- ===================================================================
-INSERT INTO vm_configuration_history (
+INSERT IGNORE INTO vm_configuration_history (
     vm_id, change_type, change_description,
     config_before, config_after,
     changed_by, change_reason
@@ -349,7 +349,7 @@ INSERT INTO vm_configuration_history (
 -- ===================================================================
 -- VM MIGRATIONS
 -- ===================================================================
-INSERT INTO vm_migrations (
+INSERT IGNORE INTO vm_migrations (
     vm_id, source_server_id, target_server_id, migration_type,
     migration_state, progress_percent,
     downtime_ms, bandwidth_mbps,

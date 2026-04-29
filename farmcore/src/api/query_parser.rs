@@ -17,38 +17,37 @@ pub struct CommonPaginationQuery {
 pub struct QueryParser;
 
 impl QueryParser {
-    /// Parse pagination parameters with validation
     pub fn parse_pagination(query: &CommonPaginationQuery) -> Result<(i64, i64, i64), String> {
         let page = query.page.unwrap_or(1);
         let per_page = query.per_page.unwrap_or(10).min(100);
-        
+
         if page < 1 || per_page < 1 {
             return Err("Invalid pagination parameters".to_string());
         }
-        
+
         let offset = (page - 1) * per_page;
         Ok((page, per_page, offset))
     }
 
-    /// Parse column selection
     pub fn parse_columns(columns: &Option<String>) -> Option<Vec<String>> {
         match columns {
             Some(cols) if !cols.is_empty() => {
                 Some(cols.split(',').map(|s| s.trim().to_string()).collect())
             }
-            _ => None
+            _ => None,
         }
     }
 
-    /// Parse search conditions using SearchQueryBuilder
     pub fn parse_search_conditions(
-        search: Option<&str>, 
-        filters: &HashMap<String, String>
+        search: Option<&str>,
+        _filters: &HashMap<String, String>,
     ) -> Result<Vec<WhereCondition>, String> {
-        SearchQueryBuilder::build_mixed_conditions(search, filters, None)
+        match search {
+            Some(json) => SearchQueryBuilder::build_conditions(json),
+            None => Ok(Vec::new()),
+        }
     }
 
-    /// Create QueryOptions from parsed parameters
     pub fn create_query_options(
         columns: Option<Vec<String>>,
         where_conditions: Vec<WhereCondition>,

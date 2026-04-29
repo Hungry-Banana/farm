@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import DBTableSection, { SearchCriteria } from "@/components/ui/table/DBTableSection";
 import { getServersPaginated } from "@/lib/servers";
@@ -10,6 +10,7 @@ import ServerCellContent from "@/components/ui/table/ServerCellContent";
 export default function ServerManagementPage() {
     const [servers, setServers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
@@ -73,25 +74,26 @@ export default function ServerManagementPage() {
                 // Extract and reorder the data array from the API response
                 const orderedServers = reorderServerKeys(response.data || [], desiredOrder);
                 setServers(orderedServers);
-                setTotalItems(response.total || 0);
+                setTotalItems(response.meta?.pagination?.total_count || 0);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch servers');
             } finally {
                 setLoading(false);
+                setInitialLoading(false);
             }
         };
 
         fetchServers();
     }, [currentPage, searchCriteria]);
 
-    const handlePageChange = (page: number) => {
+    const handlePageChange = useCallback((page: number) => {
         setCurrentPage(page);
-    };
+    }, []);
 
-    const handleSearch = (criteria: SearchCriteria[]) => {
+    const handleSearch = useCallback((criteria: SearchCriteria[]) => {
         setSearchCriteria(criteria);
         setCurrentPage(1); // Reset to first page on new search
-    };
+    }, []);
     
     return (
         <div>   
@@ -111,7 +113,7 @@ export default function ServerManagementPage() {
 
             {/* Server Table */}
             <div className="rounded-theme border border-island_border bg-island_background p-6">
-                {loading ? (
+                {initialLoading ? (
                     <div className="flex justify-center items-center py-8">
                         <div className="text-muted-foreground">Loading servers...</div>
                     </div>
@@ -120,18 +122,25 @@ export default function ServerManagementPage() {
                         <div className="text-red-500">Error: {error}</div>
                     </div>
                 ) : (
-                    <DBTableSection 
-                        data={servers}
-                        searchPlaceholder="Search servers..."
-                        keyField="server_id"
-                        cellContentRenderer={ServerCellContent}
-                        totalItems={totalItems}
-                        currentPage={currentPage}
-                        onPageChange={handlePageChange}
-                        itemsPerPage={itemsPerPage}
-                        onSearch={handleSearch}
-                        activeCriteria={searchCriteria}
-                    />
+                    <div className="relative">
+                        {loading && (
+                            <div className="absolute inset-0 bg-island_background/60 flex items-center justify-center z-10 rounded-theme">
+                                <div className="text-muted-foreground text-sm">Loading...</div>
+                            </div>
+                        )}
+                        <DBTableSection 
+                            data={servers}
+                            searchPlaceholder="Search servers..."
+                            keyField="server_id"
+                            cellContentRenderer={ServerCellContent}
+                            totalItems={totalItems}
+                            currentPage={currentPage}
+                            onPageChange={handlePageChange}
+                            itemsPerPage={itemsPerPage}
+                            onSearch={handleSearch}
+                            activeCriteria={searchCriteria}
+                        />
+                    </div>
                 )}
             </div>
         </div>

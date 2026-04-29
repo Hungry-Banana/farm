@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
+import { getClusters, getClusterStats } from "@/lib/clusters";
 import TableSection from "@/components/ui/table/TableSection";
-import VMCellContent from "@/components/ui/table/VMCellContent";
-import { getVMs, getVMOverview } from "@/lib/vms";
+import ClusterCellContent from "@/components/ui/table/ClusterCellContent";
 import {
   PieChart, Pie, Cell,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList,
@@ -13,12 +13,19 @@ import {
 } from "recharts";
 
 // ── Chart colours ─────────────────────────────────────────────────────────────
-const STATE_CHART_COLORS: Record<string, string> = {
-  running: "#10B981", Running: "#10B981", RUNNING: "#10B981",
-  stopped: "#EF4444", Stopped: "#EF4444", STOPPED: "#EF4444",
-  paused:  "#F59E0B", Paused:  "#F59E0B", PAUSED:  "#F59E0B",
-  suspended: "#3B82F6", Suspended: "#3B82F6", SUSPENDED: "#3B82F6",
-  crashed: "#DC2626", Crashed: "#DC2626", CRASHED: "#DC2626",
+const STATUS_CHART_COLORS: Record<string, string> = {
+  ACTIVE: "#10B981", Active: "#10B981", active: "#10B981", OPERATIONAL: "#10B981",
+  INACTIVE: "#EF4444", Inactive: "#EF4444", inactive: "#EF4444",
+  MAINTENANCE: "#F59E0B", Maintenance: "#F59E0B", maintenance: "#F59E0B", UNDER_MAINTENANCE: "#F59E0B",
+  DECOMMISSIONED: "#6B7280", Decommissioned: "#6B7280", decommissioned: "#6B7280",
+};
+
+const ENV_CHART_COLORS: Record<string, string> = {
+  PRODUCTION: "#DC2626", Production: "#DC2626", production: "#DC2626",
+  DEVELOPMENT: "#059669", Development: "#059669", development: "#059669",
+  STAGING: "#F59E0B", Staging: "#F59E0B", staging: "#F59E0B",
+  TESTING: "#7C3AED", Testing: "#7C3AED", testing: "#7C3AED",
+  QA: "#2563EB", Qa: "#2563EB", qa: "#2563EB",
 };
 
 const CHART_COLORS = ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#3B82F6", "#8B5CF6", "#EC4899"];
@@ -57,6 +64,8 @@ function DonutChart({ title, data, colorMap }: { title: string; data: { name: st
               {filled.map((entry, i) => <Cell key={i} fill={entry.fill} strokeWidth={0} />)}
             </Pie>
             <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} wrapperStyle={{ outline: "none" }} />
+            <text x="50%" y="43%" dominantBaseline="middle" textAnchor="middle" fontSize={22} fontWeight="bold" fill="#f1f5f9">{total}</text>
+            {/* recharts Legend */}
           </PieChart>
         </ResponsiveContainer>
       )}
@@ -69,7 +78,7 @@ function HBarChart({ title, data, subtitle, colors = CHART_COLORS }: { title: st
   return (
     <div className="rounded-theme border border-island_border bg-island_background p-5">
       <h3 className="text-sm font-semibold text-foreground mb-1">{title}</h3>
-      <p className="text-xs text-muted-foreground mb-3">{subtitle ?? `${data.length} ${data.length === 1 ? "category" : "categories"}`}</p>
+      <p className="text-xs text-muted-foreground mb-3">{subtitle ?? `${data.length} ${data.length === 1 ? "entry" : "entries"}`}</p>
       {data.length === 0 ? (
         <div className="flex items-center justify-center h-44 text-muted-foreground text-sm">No data</div>
       ) : (
@@ -77,7 +86,7 @@ function HBarChart({ title, data, subtitle, colors = CHART_COLORS }: { title: st
           <BarChart layout="vertical" data={data} margin={{ left: 4, right: 48, top: 4, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(127,127,127,0.15)" horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 11, fill: "rgba(127,127,127,0.8)" }} allowDecimals={false} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "rgba(127,127,127,0.8)" }} width={100} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "rgba(127,127,127,0.8)" }} width={110} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} wrapperStyle={{ outline: "none" }} cursor={{ fill: "rgba(148,163,184,0.08)" }} />
             <Bar dataKey="value" radius={[0, 4, 4, 0]}>
               <LabelList dataKey="value" position="right" style={{ fontSize: 11, fill: "rgba(127,127,127,0.8)" }} />
@@ -91,19 +100,19 @@ function HBarChart({ title, data, subtitle, colors = CHART_COLORS }: { title: st
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-export default function VMOverviewPage() {
-  const [loading, setLoading] = useState(true);
-  const [vms, setVMs]         = useState<any[]>([]);
-  const [stats, setStats]     = useState<any>({});
+export default function ClustersOverviewPage() {
+  const [loading, setLoading]   = useState(true);
+  const [clusters, setClusters] = useState<any[]>([]);
+  const [stats, setStats]       = useState<any>({});
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [vmsData, statsData] = await Promise.all([getVMs(), getVMOverview()]);
-        setVMs(vmsData || []);
+        const [clustersData, statsData] = await Promise.all([getClusters(), getClusterStats()]);
+        setClusters(clustersData || []);
         setStats(statsData || {});
       } catch (err) {
-        console.error("Failed to load VM overview:", err);
+        console.error("Failed to load cluster overview:", err);
       } finally {
         setLoading(false);
       }
@@ -112,19 +121,32 @@ export default function VMOverviewPage() {
   }, []);
 
   // ── Derived chart data ──────────────────────────────────────────────────────
-  const byState      = normalize(stats.by_state      ?? []);
-  const byHypervisor = normalize(stats.by_hypervisor ?? []);
+  const byStatus  = normalize(stats.by_status      ?? []);
+  const byEnv     = normalize(stats.by_environment ?? []);
 
-  const memGb = stats.total_memory_gb
-    ?? (stats.total_memory_mb ? stats.total_memory_mb / 1024 : 0);
-  const storageGb = stats.total_storage_gb ?? 0;
-  const storageFmt = storageGb >= 1024
-    ? `${(storageGb / 1024).toFixed(1)} TB`
-    : `${Math.round(storageGb)} GB`;
+  // Servers per cluster (top 10 by total_servers desc)
+  const serversByCluster = [...clusters]
+    .filter((c) => (c.total_servers ?? 0) > 0)
+    .sort((a, b) => (b.total_servers ?? 0) - (a.total_servers ?? 0))
+    .slice(0, 10)
+    .map((c) => ({ name: c.cluster_name ?? `Cluster ${c.cluster_id}`, value: c.total_servers ?? 0 }));
 
-  const recentVMs = [...vms]
-    .sort((a, b) => b.vm_id - a.vm_id)
-    .slice(0, 12);
+  // Capacity utilization per cluster (top 10 with a max_capacity set)
+  const capacityData = [...clusters]
+    .filter((c) => c.max_capacity && c.max_capacity > 0)
+    .sort((a, b) => (b.total_servers ?? 0) / b.max_capacity - (a.total_servers ?? 0) / a.max_capacity)
+    .slice(0, 10)
+    .map((c) => ({
+      name:  c.cluster_name ?? `Cluster ${c.cluster_id}`,
+      value: Math.round(((c.total_servers ?? 0) / c.max_capacity) * 100),
+    }));
+
+  const recentClusters = [...clusters]
+    .sort((a, b) => b.cluster_id - a.cluster_id)
+    .slice(0, 15);
+
+  const activeCount  = stats.active_clusters   ?? clusters.filter((c) => c.status?.toUpperCase() === "ACTIVE").length;
+  const inactiveCount = (stats.total_clusters ?? clusters.length) - activeCount;
 
   return (
     <div className="space-y-6">
@@ -133,31 +155,31 @@ export default function VMOverviewPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Virtual Machines Overview</h1>
+          <h1 className="text-2xl font-bold text-foreground">Clusters Overview</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Health, capacity and inventory across all virtual machines
+            Health, capacity and inventory across all server clusters
           </p>
         </div>
-        <Link href="/servers/vms" className="text-sm text-primary hover:underline">
-          View all VMs →
+        <Link href="/clusters" className="text-sm text-primary hover:underline">
+          View all clusters →
         </Link>
       </div>
 
       {loading ? (
         <div className="rounded-theme border border-island_border bg-island_background p-16 text-center text-muted-foreground">
-          Loading VM overview…
+          Loading cluster overview…
         </div>
       ) : (
         <>
           {/* ── Hero stat cards ───────────────────────────────────────────── */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
-              { label: "Total VMs",     value: (stats.total_vms     ?? vms.length).toLocaleString(), sub: `${stats.running_vms ?? 0} running`, subColor: "text-green-500" },
-              { label: "Running",       value: (stats.running_vms   ?? 0).toLocaleString(),          sub: "currently active",                   subColor: "text-green-500" },
-              { label: "Stopped",       value: (stats.stopped_vms   ?? 0).toLocaleString(),          sub: `${byState.find(s => s.name.toLowerCase() === "paused")?.value ?? 0} paused`,  subColor: "text-red-500" },
-              { label: "vCPUs",         value: (stats.total_vcpus   ?? 0).toLocaleString(),          sub: "allocated vCPUs" },
-              { label: "Total Memory",  value: `${Math.round(memGb).toLocaleString()} GB`,            sub: "allocated RAM" },
-              { label: "Total Storage", value: storageFmt,                                            sub: "across all VMs" },
+              { label: "Total Clusters",    value: (stats.total_clusters    ?? clusters.length).toLocaleString(),          sub: `${activeCount} active`,        subColor: "text-green-500" },
+              { label: "Active",            value: activeCount.toLocaleString(),                                            sub: "operational clusters",          subColor: "text-green-500" },
+              { label: "Inactive",          value: inactiveCount.toLocaleString(),                                          sub: `${byStatus.find(s => s.name.toUpperCase() === "MAINTENANCE")?.value ?? 0} in maintenance`, subColor: "text-yellow-500" },
+              { label: "Sub-Clusters",      value: (stats.total_sub_clusters ?? 0).toLocaleString(),                       sub: "across all clusters" },
+              { label: "Total Servers",     value: (stats.total_servers     ?? 0).toLocaleString(),                        sub: "in clusters" },
+              { label: "Active Servers",    value: (stats.active_servers    ?? 0).toLocaleString(),                        sub: "running normally",              subColor: "text-green-500" },
             ].map(({ label, value, sub, subColor }) => (
               <div key={label} className="rounded-theme border border-island_border bg-island_background p-5">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">{label}</p>
@@ -169,31 +191,38 @@ export default function VMOverviewPage() {
 
           {/* ── Charts row ────────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <DonutChart title="VM State"             data={byState}      colorMap={STATE_CHART_COLORS} />
-            <HBarChart  title="VMs by Hypervisor"   data={byHypervisor} subtitle={`${byHypervisor.length} hypervisor types`} />
-            <DonutChart title="VM State Breakdown"  data={byState}      colorMap={STATE_CHART_COLORS} />
+            <DonutChart title="Cluster Status"      data={byStatus} colorMap={STATUS_CHART_COLORS} />
+            <DonutChart title="Environment Distribution" data={byEnv} colorMap={ENV_CHART_COLORS} />
+            {serversByCluster.length > 0 ? (
+              <HBarChart title="Servers per Cluster" data={serversByCluster} subtitle="Top 10 by server count" />
+            ) : capacityData.length > 0 ? (
+              <HBarChart title="Capacity Utilization (%)" data={capacityData} subtitle="Top 10 clusters" />
+            ) : (
+              <HBarChart title="Servers per Cluster" data={[]} />
+            )}
           </div>
 
-          {/* ── VMs table ─────────────────────────────────────────────────── */}
+          {/* ── Clusters table ────────────────────────────────────────────── */}
           <div className="rounded-theme border border-island_border bg-island_background">
             <div className="flex items-center justify-between p-5 border-b border-island_border">
-              <h2 className="text-sm font-semibold text-foreground">Recent Virtual Machines</h2>
-              <span className="text-xs text-muted-foreground">{vms.length} total</span>
+              <h2 className="text-sm font-semibold text-foreground">All Clusters</h2>
+              <span className="text-xs text-muted-foreground">{clusters.length} total</span>
             </div>
             <div className="p-5">
               <TableSection
                 columns={[
-                  { key: "vm_name",          label: "VM",          render: (v, item) => <VMCellContent columnKey="vm_name"          value={v} item={item} /> },
-                  { key: "hypervisor_type",  label: "Hypervisor",  render: (v, item) => <VMCellContent columnKey="hypervisor_type"  value={v} item={item} /> },
-                  { key: "vm_state",         label: "State",       render: (v, item) => <VMCellContent columnKey="vm_state"         value={v} item={item} /> },
-                  { key: "guest_os_family",  label: "OS",          render: (v, item) => <VMCellContent columnKey="guest_os_family"  value={v} item={item} /> },
-                  { key: "vcpu_count",       label: "vCPUs",       render: (v, item) => <VMCellContent columnKey="vcpu_count"       value={v} item={item} /> },
-                  { key: "memory_mb",        label: "Memory",      render: (v, item) => <VMCellContent columnKey="memory_mb"        value={v} item={item} /> },
-                  { key: "server_id",        label: "Host Server", render: (v, item) => <VMCellContent columnKey="server_id"        value={v} item={item} /> },
+                  { key: "cluster_name",     label: "Cluster",     render: (v, item) => <ClusterCellContent columnKey="cluster_name"     value={v} item={item} /> },
+                  { key: "cluster_code",     label: "Code",        render: (v, item) => <ClusterCellContent columnKey="cluster_code"     value={v} item={item} /> },
+                  { key: "status",           label: "Status",      render: (v, item) => <ClusterCellContent columnKey="status"           value={v} item={item} /> },
+                  { key: "environment_type", label: "Environment", render: (v, item) => <ClusterCellContent columnKey="environment_type" value={v} item={item} /> },
+                  { key: "total_servers",    label: "Servers",     render: (v, item) => <ClusterCellContent columnKey="total_servers"    value={v} item={item} /> },
+                  { key: "active_servers",   label: "Active",      render: (v, item) => <ClusterCellContent columnKey="active_servers"   value={v} item={item} /> },
+                  { key: "region",           label: "Region",      render: (v, item) => <ClusterCellContent columnKey="region"           value={v} item={item} /> },
+                  { key: "owner",            label: "Owner",       render: (v, item) => <ClusterCellContent columnKey="owner"            value={v} item={item} /> },
                 ]}
-                data={recentVMs}
-                keyField="vm_id"
-                searchable={false}
+                data={recentClusters}
+                keyField="cluster_id"
+                searchable={true}
               />
             </div>
           </div>
@@ -203,10 +232,10 @@ export default function VMOverviewPage() {
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Quick Access</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { title: "All VMs",          desc: "Browse the full VM list",          icon: "💻", href: "/servers/vms" },
-                { title: "Servers",          desc: "Physical server inventory",         icon: "🖥️", href: "/servers" },
-                { title: "Server Overview",  desc: "Server analytics and breakdown",    icon: "📊", href: "/servers/overview" },
-                { title: "Clusters",         desc: "Server cluster groupings",          icon: "🗂️", href: "/clusters" },
+                { title: "All Clusters",    desc: "Browse the full cluster list",         icon: "🗂️", href: "/clusters" },
+                { title: "Servers",         desc: "Physical server inventory",             icon: "🖥️", href: "/servers" },
+                { title: "Server Overview", desc: "Server analytics and breakdown",        icon: "📊", href: "/servers/overview" },
+                { title: "Datacenters",     desc: "Datacenter and rack management",        icon: "🏢", href: "/datacenters" },
               ].map(({ title, desc, icon, href }) => (
                 <Link key={href} href={href}
                   className="flex items-start gap-3 p-4 rounded-theme border border-island_border bg-island_background hover:bg-accent/30 transition-colors">
