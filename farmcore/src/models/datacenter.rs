@@ -136,7 +136,6 @@ pub struct DatacenterRackPosition {
     
     // Position Information
     pub u_position: i32,
-    pub u_height: i32,
     
     // Status
     pub status: String, // ENUM: AVAILABLE, OCCUPIED, RESERVED, BLOCKED

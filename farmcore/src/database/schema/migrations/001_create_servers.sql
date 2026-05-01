@@ -197,6 +197,7 @@ CREATE TABLE IF NOT EXISTS servers (
     data_center_id INT DEFAULT 0,
     rack_id INT DEFAULT 0,
     rack_position_id INT DEFAULT 0,
+    u_height INT NOT NULL DEFAULT 1,
     
     -- Inventory Tracking
     last_inventory_at TIMESTAMP NULL,

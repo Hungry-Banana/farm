@@ -137,7 +137,6 @@ CREATE TABLE IF NOT EXISTS datacenter_rack_positions (
     
     -- Position Information
     u_position INT NOT NULL,
-    u_height INT NOT NULL DEFAULT 1,
     
     -- Status
     status ENUM('AVAILABLE', 'OCCUPIED', 'RESERVED', 'BLOCKED') NOT NULL DEFAULT 'AVAILABLE',

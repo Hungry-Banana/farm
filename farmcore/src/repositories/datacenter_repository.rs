@@ -29,6 +29,7 @@ pub trait DatacenterRepo: Send + Sync {
     // Rack Position CRUD operations
     async fn get_positions_by_rack(&self, rack_id: i32) -> Result<Vec<DatacenterRackPosition>, sqlx::Error>;
     async fn get_position_by_id(&self, position_id: i32) -> Result<Option<DatacenterRackPosition>, sqlx::Error>;
+    async fn check_position_overlap(&self, rack_id: i32, u_position: i32, u_height: i32, exclude_position_id: Option<i32>) -> Result<bool, sqlx::Error>;
     async fn create_position(&self, position: DatacenterRackPosition) -> Result<i32, sqlx::Error>;
     async fn update_position(&self, position_id: i32, updates: HashMap<String, serde_json::Value>) -> Result<bool, sqlx::Error>;
     async fn delete_position(&self, position_id: i32) -> Result<bool, sqlx::Error>;
@@ -296,20 +297,70 @@ impl DatacenterRepository {
         DatabaseHelper::get_by_id(&self.pool, DatacenterRackPosition::TABLE, DatacenterRackPosition::KEY, position_id as i64).await
     }
 
+    /// Check whether a u_position..u_position+u_height range overlaps any existing position
+    /// in the same rack. Pass `exclude_position_id` when updating so we don't conflict with
+    /// the row being edited.
+    pub async fn check_position_overlap(
+        &self,
+        rack_id: i32,
+        u_position: i32,
+        u_height: i32,
+        exclude_position_id: Option<i32>,
+    ) -> Result<bool, sqlx::Error> {
+        // Two ranges [a, a+ah) and [b, b+bh) overlap when a < b+bh AND b < a+ah.
+        // Here (a, ah) is the candidate; (b, bh) are existing rows.
+        let new_end = u_position + u_height; // exclusive upper bound
+
+        let count: (i64,) = if let Some(exclude_id) = exclude_position_id {
+            sqlx::query_as(
+                r#"
+                SELECT COUNT(*) FROM datacenter_rack_positions p
+                LEFT JOIN servers s ON s.rack_position_id = p.rack_position_id
+                WHERE p.rack_id = ?
+                  AND p.rack_position_id != ?
+                  AND p.u_position < ?
+                  AND (p.u_position + COALESCE(s.u_height, 1)) > ?
+                "#,
+            )
+            .bind(rack_id)
+            .bind(exclude_id)
+            .bind(new_end)
+            .bind(u_position)
+            .fetch_one(&self.pool)
+            .await?
+        } else {
+            sqlx::query_as(
+                r#"
+                SELECT COUNT(*) FROM datacenter_rack_positions p
+                LEFT JOIN servers s ON s.rack_position_id = p.rack_position_id
+                WHERE p.rack_id = ?
+                  AND p.u_position < ?
+                  AND (p.u_position + COALESCE(s.u_height, 1)) > ?
+                "#,
+            )
+            .bind(rack_id)
+            .bind(new_end)
+            .bind(u_position)
+            .fetch_one(&self.pool)
+            .await?
+        };
+
+        Ok(count.0 > 0)
+    }
+
     /// Create a new position
     pub async fn create_position(&self, position: DatacenterRackPosition) -> Result<i32, sqlx::Error> {
         let query = r#"
             INSERT INTO datacenter_rack_positions (
-                rack_id, u_position, u_height, status,
+                rack_id, u_position, status,
                 reserved_for, reservation_notes,
                 server_id, device_type, notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         "#;
 
         let result = sqlx::query(query)
             .bind(position.rack_id)
             .bind(position.u_position)
-            .bind(position.u_height)
             .bind(&position.status)
             .bind(&position.reserved_for)
             .bind(&position.reservation_notes)
@@ -530,6 +581,10 @@ impl DatacenterRepo for DatacenterRepository {
 
     async fn get_position_by_id(&self, position_id: i32) -> Result<Option<DatacenterRackPosition>, sqlx::Error> {
         self.get_position_by_id(position_id).await
+    }
+
+    async fn check_position_overlap(&self, rack_id: i32, u_position: i32, u_height: i32, exclude_position_id: Option<i32>) -> Result<bool, sqlx::Error> {
+        self.check_position_overlap(rack_id, u_position, u_height, exclude_position_id).await
     }
 
     async fn create_position(&self, position: DatacenterRackPosition) -> Result<i32, sqlx::Error> {

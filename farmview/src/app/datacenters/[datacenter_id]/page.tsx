@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { getDatacenterById, getDatacenterWithRacks, getDatacenterStatsById } from "@/lib/datacenters";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import FieldSection from "@/components/ui/FieldSection";
@@ -27,10 +28,13 @@ const RacksInventory = ({ racks }: { racks: any[] }) => {
             key: 'rack_name',
             label: 'Rack Name',
             render: (value, rack) => (
-              <div className="flex items-center gap-2">
+              <Link
+                href={`/datacenters/${rack.data_center_id}/racks/${rack.rack_id}`}
+                className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+              >
                 <span className="text-sm">🗄️</span>
                 <span className="font-medium">{value || `Rack ${rack.rack_id}`}</span>
-              </div>
+              </Link>
             )
           },
           { key: 'rack_code', label: 'Code' },

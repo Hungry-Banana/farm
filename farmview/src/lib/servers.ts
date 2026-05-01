@@ -16,6 +16,19 @@ export async function getServerById(server_id: number) {
 	return getEntityById(API_ENDPOINTS.SERVERS.BY_ID, server_id, "server");
 }
 
+export async function getServersByRackId(rack_id: number) {
+	return safeApiCall(
+		async () => {
+			const result = await apiRequest(API_ENDPOINTS.SERVERS.LIST, {
+				params: { rack_id },
+			});
+			return result?.data || [];
+		},
+		[],
+		`Failed to fetch servers for rack ${rack_id}:`
+	);
+}
+
 export async function updateServer(server_id: number, updateData: Record<string, any>) {
 	return safeApiCall(
 		async () => {

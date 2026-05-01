@@ -51,6 +51,19 @@ export async function getSwitchById(switchId: number) {
 	return getEntityById(API_ENDPOINTS.SWITCHES.BY_ID, switchId, 'switch');
 }
 
+export async function getSwitchesByRackId(rack_id: number) {
+	return safeApiCall(
+		async () => {
+			const result = await apiRequest(API_ENDPOINTS.SWITCHES.LIST, {
+				params: { rack_id },
+			});
+			return result?.data || [];
+		},
+		[],
+		`Failed to fetch switches for rack ${rack_id}:`
+	);
+}
+
 export async function getSwitchStatById(switchId: number) {
 	return safeApiCall(
 		async () => {

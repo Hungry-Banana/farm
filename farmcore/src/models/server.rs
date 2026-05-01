@@ -18,6 +18,8 @@ pub struct Server {
     pub product_name: Option<String>,
     pub rack_id: Option<i32>,
     pub rack_position_id: Option<i32>,
+    #[sqlx(default)]
+    pub u_height: Option<i32>,
     pub serial_number: Option<String>,
     pub server_name: Option<String>,
     pub server_type: Option<String>, // ENUM in DB: 'BAREMETAL', 'HOST', 'STORAGE', 'COMPUTE'

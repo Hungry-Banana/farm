@@ -55,7 +55,7 @@ export default function SubClusterActionsDropdown({ subClusterId, clusterId }: S
   };
 
   const subClusterActions: ActionItem[] = [
-    { label: "Edit Sub-Cluster", action: () => { if (subClusterId) router.push(`/clusters/subclusters/${subClusterId}/edit`); }, icon: "✏️" },
+    { label: "Edit Sub-Cluster", action: () => { if (subClusterId && clusterId) router.push(`/clusters/${clusterId}/subclusters/${subClusterId}/edit`); }, icon: "✏️" },
     { label: "View Servers", action: () => { if (subClusterId) router.push(`/servers?sub_cluster_id=${subClusterId}`); }, icon: "🖥️" },
     { label: "View Parent Cluster", action: () => { if (clusterId) router.push(`/clusters/${clusterId}`); }, icon: "🗂️" },
     { label: "Delete Sub-Cluster", action: handleDelete, icon: "🗑️", danger: true },

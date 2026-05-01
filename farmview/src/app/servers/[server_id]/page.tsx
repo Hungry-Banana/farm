@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { DefaultServerIcon } from "@/assets/icons";
 import { getServerById } from "@/lib/servers";
 import { getVMsByServer } from "@/lib/vms";
+import { getPositionById } from "@/lib/datacenters";
 import { ServerCpuUI, ServerDiskUI, ServerGpuDetail, ServerInventory, ServerMemoryUI, ServerNetworkUI, ServerWithAllComponents } from "@/types/server";
 import Breadcrumb from "@/components/common/Breadcrumbs/Breadcrumb";
 import FieldSection from "@/components/ui/FieldSection";
@@ -301,6 +302,7 @@ export default function ServerPage() {
     const serverId = parseInt(params.server_id as string);
     const [serverData, setServerData] = useState<ServerWithAllComponents | null>(null);
     const [loading, setLoading] = useState(true);
+    const [rackPosition, setRackPosition] = useState<any>(null);
 	const inventory: ServerInventory | null = serverData ? convertServerToInventory(serverData) : null;
 
     useEffect(() => {
@@ -308,6 +310,10 @@ export default function ServerPage() {
 			try {
 				const data = await getServerById(serverId);
 				setServerData(data);
+				const srv = Array.isArray(data) ? data[0] : data;
+				if (srv?.rack_position_id) {
+					try { setRackPosition(await getPositionById(srv.rack_position_id)); } catch (_) {}
+				}
 			} catch (error) {
 				console.error('Failed to load server:', error);
 			} finally {
@@ -420,7 +426,18 @@ export default function ServerPage() {
 
                                     {/* Location & Placement Section */}
                                     <FieldSection fields={[
-                                        { label: 'Data Center ID', value: server.data_center_id || '0', icon: '' },
+                                        { 
+                                            label: 'Data Center ID', 
+                                            value: server.data_center_id ? (
+                                                <a 
+                                                    href={`/datacenters/${server.data_center_id}`}
+                                                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                                                >
+                                                    {server.data_center_id}
+                                                </a>
+                                            ) : '0',
+                                            icon: '' 
+                                        },
                                         { 
                                             label: 'Cluster ID', 
                                             value: server.cluster_id ? (
@@ -433,12 +450,23 @@ export default function ServerPage() {
                                             ) : '0',
                                             icon: '' 
                                         },
-                                        { label: 'Rack ID', value: server.rack_id || '0', icon: '' },
+                                        { 
+                                            label: 'Rack ID', 
+                                            value: server.rack_id ? (
+                                                <a 
+                                                    href={`/datacenters/${server.data_center_id}/racks/${server.rack_id}`}
+                                                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                                                >
+                                                    {server.rack_id}
+                                                </a>
+                                            ) : '0',
+                                            icon: '' 
+                                        },
                                         { 
                                             label: 'Sub Cluster ID', 
                                             value: server.sub_cluster_id ? (
                                                 <a 
-                                                    href={`/clusters/sub-clusters/${server.sub_cluster_id}`}
+                                                    href={`/clusters/${server.cluster_id}/subclusters/${server.sub_cluster_id}`}
                                                     className="text-blue-600 hover:text-blue-800 hover:underline"
                                                 >
                                                     {server.sub_cluster_id}
@@ -446,7 +474,18 @@ export default function ServerPage() {
                                             ) : '0',
                                             icon: '' 
                                         },
-                                        { label: 'Rack Position', value: server.rack_position_id || '0', icon: '' }
+                                        {
+                                            label: 'Rack Position',
+                                            value: rackPosition
+                                                ? `U${rackPosition.u_position}`
+                                                : server.rack_position_id || '—',
+                                            icon: ''
+                                        },
+                                        {
+                                            label: 'U Size',
+                                            value: server.u_height ? `${server.u_height}U` : '1U',
+                                            icon: ''
+                                        }
                                     ]} />
 
                                     {/* Separator Line */}

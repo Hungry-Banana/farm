@@ -661,7 +661,50 @@ pub async fn create_position(
     let rack_id = rack_id.into_inner() as i32;
     let mut position_data = position.into_inner();
     position_data.rack_id = rack_id;
-    
+
+    // Determine u_height for the incoming item:
+    // For SERVER device type, read the server's own u_height; everything else is 1U.
+    let u_height: i32 = if position_data.device_type.as_deref() == Some("SERVER") {
+        if let Some(server_id) = position_data.server_id {
+            match crate::database::DatabaseHelper::get_by_id::<crate::models::Server>(
+                &app_state.pool(),
+                crate::models::Server::TABLE,
+                crate::models::Server::KEY,
+                server_id as i64,
+            ).await {
+                Ok(Some(srv)) => srv.u_height.unwrap_or(1),
+                _ => 1,
+            }
+        } else { 1 }
+    } else { 1 };
+
+    // Validate that the requested U-range does not overlap any existing position
+    match app_state.datacenter_repo().check_position_overlap(
+        rack_id,
+        position_data.u_position,
+        u_height,
+        None,
+    ).await {
+        Ok(true) => {
+            let response = ApiResponse::<()>::error(
+                "OVERLAP_CONFLICT",
+                &format!(
+                    "U positions {}-{} overlap with an existing position in rack {}",
+                    position_data.u_position,
+                    position_data.u_position + u_height - 1,
+                    rack_id,
+                ),
+            );
+            return HttpResponse::Conflict().json(response);
+        }
+        Err(e) => {
+            log::error!("Error checking position overlap for rack {}: {}", rack_id, e);
+            let response = ApiResponse::<()>::error("DATABASE_ERROR", "Failed to validate position overlap");
+            return HttpResponse::InternalServerError().json(response);
+        }
+        Ok(false) => {}
+    }
+
     match app_state.datacenter_repo().create_position(position_data).await {
         Ok(position_id) => {
             let response = ApiResponse::success(serde_json::json!({
@@ -697,6 +740,71 @@ pub async fn update_position(
             "No fields provided for update"
         );
         return HttpResponse::BadRequest().json(response);
+    }
+
+    // If u_position is being changed, validate for overlap using the server's u_height
+    let changes_position = update_map.contains_key("u_position");
+    if changes_position {
+        match app_state.datacenter_repo().get_position_by_id(position_id).await {
+            Ok(Some(existing)) => {
+                let new_u_position = update_map
+                    .get("u_position")
+                    .and_then(|v| v.as_i64())
+                    .map(|v| v as i32)
+                    .unwrap_or(existing.u_position);
+
+                // Get the effective u_height from the server if one is linked
+                let effective_u_height: i32 = if let Some(server_id) = existing.server_id {
+                    match crate::database::DatabaseHelper::get_by_id::<crate::models::Server>(
+                        &app_state.pool(),
+                        crate::models::Server::TABLE,
+                        crate::models::Server::KEY,
+                        server_id as i64,
+                    ).await {
+                        Ok(Some(srv)) => srv.u_height.unwrap_or(1),
+                        _ => 1,
+                    }
+                } else { 1 };
+
+                match app_state.datacenter_repo().check_position_overlap(
+                    existing.rack_id,
+                    new_u_position,
+                    effective_u_height,
+                    Some(position_id),
+                ).await {
+                    Ok(true) => {
+                        let response = ApiResponse::<()>::error(
+                            "OVERLAP_CONFLICT",
+                            &format!(
+                                "U positions {}-{} overlap with an existing position in rack {}",
+                                new_u_position,
+                                new_u_position + effective_u_height - 1,
+                                existing.rack_id,
+                            ),
+                        );
+                        return HttpResponse::Conflict().json(response);
+                    }
+                    Err(e) => {
+                        log::error!("Error checking position overlap for position {}: {}", position_id, e);
+                        let response = ApiResponse::<()>::error("DATABASE_ERROR", "Failed to validate position overlap");
+                        return HttpResponse::InternalServerError().json(response);
+                    }
+                    Ok(false) => {}
+                }
+            }
+            Ok(None) => {
+                let response = ApiResponse::<()>::error(
+                    "NOT_FOUND",
+                    &format!("Position with ID {} not found", position_id),
+                );
+                return HttpResponse::NotFound().json(response);
+            }
+            Err(e) => {
+                log::error!("Error fetching position {} for overlap check: {}", position_id, e);
+                let response = ApiResponse::<()>::error("DATABASE_ERROR", "Failed to fetch position");
+                return HttpResponse::InternalServerError().json(response);
+            }
+        }
     }
 
     match app_state.datacenter_repo().update_position(position_id, update_map).await {
