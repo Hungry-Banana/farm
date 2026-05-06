@@ -511,7 +511,14 @@ export default function ServerPage() {
                                     <FieldSection fields={[
                                         { label: 'Primary IP', value: primaryNic?.ip_address || 'N/A', icon: '' },
                                         { label: 'Primary MAC', value: primaryNic?.mac_address || 'N/A', icon: '' },
-                                        { label: 'Switch', value: primaryNic?.switch_name || 'N/A', icon: '' },
+                                        { label: 'Switch', value: primaryNic?.switch_id ? (
+                                            <a
+                                                href={`/networking/switches/${primaryNic.switch_id}`}
+                                                className="text-blue-600 hover:text-blue-800 hover:underline"
+                                            >
+                                                {primaryNic.switch_name || primaryNic.switch_id}
+                                            </a>
+                                        ) : (primaryNic?.switch_name || 'N/A'), icon: '' },
                                         { label: 'Port', value: primaryNic?.switch_port_name || 'N/A', icon: '' }
                                     ]} />
 
@@ -519,7 +526,14 @@ export default function ServerPage() {
                                     <FieldSection fields={[
                                         { label: 'BMC IP', value: bmcInterface?.ip_address || 'N/A', icon: '' },
                                         { label: 'BMC MAC', value: bmcInterface?.mac_address || 'N/A', icon: '' },
-                                        { label: 'BMC Switch', value: bmcInterface?.switch_name || 'N/A', icon: '' },
+                                        { label: 'BMC Switch', value: bmcInterface?.switch_id ? (
+                                            <a
+                                                href={`/networking/switches/${bmcInterface.switch_id}`}
+                                                className="text-blue-600 hover:text-blue-800 hover:underline"
+                                            >
+                                                {bmcInterface.switch_name || bmcInterface.switch_id}
+                                            </a>
+                                        ) : (bmcInterface?.switch_name || 'N/A'), icon: '' },
                                         { label: 'BMC Port', value: bmcInterface?.switch_port_name || 'N/A', icon: '' }
                                     ]} />
 

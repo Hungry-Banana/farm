@@ -84,9 +84,17 @@ export const NAV_DATA = [
         icon: Icons.NetworkingDeviceIcon,
         items: [
           {
+            title: "Overview",
+            url: "/networking/overview",
+          },
+          {
             title: "Switches",
             icon: Icons.SwitchIcon,
             items: [
+              {
+                title: "Overview",
+                url: "/networking/switches/overview",
+              },
               {
                 title: "Switch Management",
                 url: "/networking/switches",

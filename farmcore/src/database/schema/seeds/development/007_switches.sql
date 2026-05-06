@@ -586,3 +586,112 @@ INSERT IGNORE INTO switch_vlans (switch_id, vlan_id, vlan_name, vlan_status) VAL
 (8, 20, 'Prod-Data',          'ACTIVE'),
 (8, 40, 'Storage',            'ACTIVE'),
 (8, 100,'OOB-MGMT',           'SUSPEND'); -- OOB not yet provisioned at DR site
+
+-- ===================================================================
+-- BULK SERVER ACCESS PORTS (one port per server, primary NIC)
+-- Port naming:  Gi2/0/{server_id}  — dedicated range for server ports
+-- Port index:   1000 + server_id   — avoids collision with uplink ports
+-- Switch mapping by datacenter:
+--   DC 1 (SFO) → sfo-access-sw-01 (switch_id=2), VLAN 30
+--   DC 2 (DFW) → dfw-access-sw-01 (switch_id=6), VLAN 20
+--   DC 3 (NYC) → nyc-core-sw-01   (switch_id=8), VLAN 20
+-- MAC addresses match those generated in 002_servers.sql, enabling
+-- the UPDATE statements below to link interfaces to ports.
+-- ===================================================================
+INSERT IGNORE INTO switch_ports (
+    switch_id, name, port_index, port_type,
+    admin_status, oper_status,
+    speed_mbps, duplex, mtu,
+    access_vlan_id, port_mode,
+    connected_device_name, connected_device_ip, connected_device_mac,
+    connected_device_type,
+    bytes_in, bytes_out, description
+)
+SELECT
+    CASE s.data_center_id
+        WHEN 1 THEN 2
+        WHEN 2 THEN 6
+        WHEN 3 THEN 8
+        ELSE   2
+    END,
+    CONCAT('Gi2/0/', s.server_id),
+    1000 + s.server_id,
+    CASE WHEN sni.speed_mbps >= 10000 THEN 'SFP+' ELSE 'ETHERNET' END,
+    CASE WHEN s.status IN ('ACTIVE', 'MAINTENANCE') THEN 'UP' ELSE 'DOWN' END,
+    CASE WHEN s.status = 'ACTIVE' THEN 'UP' ELSE 'DOWN' END,
+    sni.speed_mbps,
+    'FULL',
+    CASE WHEN sni.speed_mbps >= 10000 THEN 9216 ELSE 1500 END,
+    CASE s.data_center_id WHEN 1 THEN 30 WHEN 2 THEN 20 WHEN 3 THEN 20 ELSE 30 END,
+    'ACCESS',
+    s.server_name,
+    sni.ip_address,
+    sni.mac_address,
+    'SERVER',
+    0, 0,
+    CONCAT(s.server_name, ' — primary NIC (ens3f0)')
+FROM servers s
+JOIN server_network_interfaces sni
+    ON sni.server_id = s.server_id AND sni.is_primary = TRUE
+WHERE s.server_id BETWEEN 1 AND 107;
+
+-- ===================================================================
+-- BULK SERVER OOB PORTS (one port per server, BMC interface)
+-- Port naming:  Gi3/0/{server_id}  — dedicated range for BMC ports
+-- Port index:   2000 + server_id
+-- Switch mapping by datacenter:
+--   DC 1 (SFO) → sfo-oob-sw-01  (switch_id=3), VLAN 100
+--   DC 2 (DFW) → dfw-oob-sw-01  (switch_id=7), VLAN 100
+--   DC 3 (NYC) → nyc-core-sw-01 (switch_id=8), VLAN 100  (no dedicated OOB)
+-- ===================================================================
+INSERT IGNORE INTO switch_ports (
+    switch_id, name, port_index, port_type,
+    admin_status, oper_status,
+    speed_mbps, duplex, mtu,
+    access_vlan_id, port_mode,
+    connected_device_name, connected_device_ip, connected_device_mac,
+    connected_device_type,
+    bytes_in, bytes_out, description
+)
+SELECT
+    CASE s.data_center_id
+        WHEN 1 THEN 3
+        WHEN 2 THEN 7
+        WHEN 3 THEN 8
+        ELSE   3
+    END,
+    CONCAT('Gi3/0/', s.server_id),
+    2000 + s.server_id,
+    'ETHERNET',
+    'UP', 'UP',
+    1000,
+    'FULL', 1500,
+    100,
+    'ACCESS',
+    CONCAT(s.server_name, '-bmc'),
+    sbi.ip_address,
+    sbi.mac_address,
+    'SERVER',
+    0, 0,
+    CONCAT(s.server_name, ' — BMC / iDRAC / iLO')
+FROM servers s
+JOIN server_bmc_interfaces sbi ON sbi.server_id = s.server_id
+WHERE s.server_id BETWEEN 1 AND 107;
+
+-- ===================================================================
+-- LINK NETWORK INTERFACES → SWITCH PORTS
+-- Join on MAC address, which is generated deterministically in
+-- 002_servers.sql and stored verbatim in both tables.
+-- ===================================================================
+UPDATE server_network_interfaces sni
+JOIN switch_ports sp ON sp.connected_device_mac = sni.mac_address
+SET sni.switch_port_id = sp.switch_port_id
+WHERE sni.server_id BETWEEN 1 AND 107;
+
+-- ===================================================================
+-- LINK BMC INTERFACES → SWITCH PORTS
+-- ===================================================================
+UPDATE server_bmc_interfaces sbi
+JOIN switch_ports sp ON sp.connected_device_mac = sbi.mac_address
+SET sbi.switch_port_id = sp.switch_port_id
+WHERE sbi.server_id BETWEEN 1 AND 107;
